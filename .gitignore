@@ -55,4 +55,4 @@ release
 .env
 build_*
 resize_app_store_images.py
-backcloud.config
+config
