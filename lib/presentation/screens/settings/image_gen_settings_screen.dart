@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:native_tavern/domain/services/image_generation_service.dart';
@@ -87,7 +88,7 @@ class ImageGenSettingsScreen extends ConsumerWidget {
                     ? () => _showEndpointDialog(context, ref, settings)
                     : null,
               ),
-              if (settings.provider == ImageGenProvider.dalle)
+              if (settings.provider.requiresApiKey)
                 ListTile(
                   title: Text(AppLocalizations.of(context)!.apiKey),
                   subtitle: Text(
@@ -100,6 +101,8 @@ class ImageGenSettingsScreen extends ConsumerWidget {
                       ? () => _showApiKeyDialog(context, ref, settings)
                       : null,
                 ),
+              // Model selection
+              _buildModelSelector(context, ref, settings),
             ],
           ),
 
@@ -223,7 +226,7 @@ class ImageGenSettingsScreen extends ConsumerWidget {
                   decoration: InputDecoration(
                     labelText: AppLocalizations.of(context)!.defaultNegativePrompt,
                     hintText: AppLocalizations.of(context)!.enterTermsToAvoid,
-                    border: OutlineInputBorder(),
+                    border: const OutlineInputBorder(),
                   ),
                   maxLines: 3,
                   enabled: settings.enabled,
@@ -234,6 +237,119 @@ class ImageGenSettingsScreen extends ConsumerWidget {
               ),
             ],
           ),
+
+          // NovelAI specific settings
+          if (settings.provider == ImageGenProvider.novelai) ...[
+            const SizedBox(height: 16),
+            _buildSection(
+              context: context,
+              title: 'NovelAI Settings',
+              children: [
+                SwitchListTile(
+                  title: const Text('Anlas Guard'),
+                  subtitle: const Text('Limit image size and steps to reduce costs'),
+                  value: settings.novelaiAnlasGuard,
+                  onChanged: settings.enabled
+                      ? (value) {
+                          ref.read(imageGenSettingsProvider.notifier).setNovelaiAnlasGuard(value);
+                        }
+                      : null,
+                ),
+                SwitchListTile(
+                  title: const Text('SM (SMEA)'),
+                  subtitle: const Text('Enhanced sampling for better details'),
+                  value: settings.novelaiSm,
+                  onChanged: settings.enabled
+                      ? (value) {
+                          ref.read(imageGenSettingsProvider.notifier).setNovelaiSm(value);
+                        }
+                      : null,
+                ),
+                if (settings.novelaiSm)
+                  SwitchListTile(
+                    title: const Text('SM DYN'),
+                    subtitle: const Text('Dynamic SMEA (more creative)'),
+                    value: settings.novelaiSmDyn,
+                    onChanged: settings.enabled
+                        ? (value) {
+                            ref.read(imageGenSettingsProvider.notifier).setNovelaiSmDyn(value);
+                          }
+                        : null,
+                  ),
+                SwitchListTile(
+                  title: const Text('Decrisper'),
+                  subtitle: const Text('Reduce over-saturation in images'),
+                  value: settings.novelaiDecrisper,
+                  onChanged: settings.enabled
+                      ? (value) {
+                          ref.read(imageGenSettingsProvider.notifier).setNovelaiDecrisper(value);
+                        }
+                      : null,
+                ),
+                SwitchListTile(
+                  title: const Text('Variety+'),
+                  subtitle: const Text('Higher variety in generated images'),
+                  value: settings.novelaiVarietyBoost,
+                  onChanged: settings.enabled
+                      ? (value) {
+                          ref.read(imageGenSettingsProvider.notifier).setNovelaiVarietyBoost(value);
+                        }
+                      : null,
+                ),
+              ],
+            ),
+          ],
+
+          // OpenAI specific settings
+          if (settings.provider == ImageGenProvider.openai && settings.model.contains('dall-e-3')) ...[
+            const SizedBox(height: 16),
+            _buildSection(
+              context: context,
+              title: 'DALL-E 3 Settings',
+              children: [
+                ListTile(
+                  title: const Text('Style'),
+                  subtitle: Text(settings.openaiStyle == 'vivid' 
+                      ? 'Vivid - Hyper-real and dramatic' 
+                      : 'Natural - More natural, less hyper-real'),
+                  trailing: DropdownButton<String>(
+                    value: settings.openaiStyle,
+                    onChanged: settings.enabled
+                        ? (value) {
+                            if (value != null) {
+                              ref.read(imageGenSettingsProvider.notifier).setOpenaiStyle(value);
+                            }
+                          }
+                        : null,
+                    items: const [
+                      DropdownMenuItem(value: 'vivid', child: Text('Vivid')),
+                      DropdownMenuItem(value: 'natural', child: Text('Natural')),
+                    ],
+                  ),
+                ),
+                ListTile(
+                  title: const Text('Quality'),
+                  subtitle: Text(settings.openaiQuality == 'hd' 
+                      ? 'HD - Higher detail and consistency' 
+                      : 'Standard - Faster, lower cost'),
+                  trailing: DropdownButton<String>(
+                    value: settings.openaiQuality,
+                    onChanged: settings.enabled
+                        ? (value) {
+                            if (value != null) {
+                              ref.read(imageGenSettingsProvider.notifier).setOpenaiQuality(value);
+                            }
+                          }
+                        : null,
+                    items: const [
+                      DropdownMenuItem(value: 'standard', child: Text('Standard')),
+                      DropdownMenuItem(value: 'hd', child: Text('HD')),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ],
 
           const SizedBox(height: 16),
 
@@ -263,17 +379,23 @@ class ImageGenSettingsScreen extends ConsumerWidget {
                 title: Text(AppLocalizations.of(context)!.imagineCommand),
                 subtitle: Text(AppLocalizations.of(context)!.imagineCommandUsage),
               ),
-              if (settings.provider == ImageGenProvider.stableDiffusion)
+              if (settings.provider == ImageGenProvider.automatic1111)
                 ListTile(
                   leading: const Icon(Icons.computer, color: AppTheme.textMuted),
                   title: Text(AppLocalizations.of(context)!.stableDiffusion),
                   subtitle: Text(AppLocalizations.of(context)!.stableDiffusionDescription),
                 ),
-              if (settings.provider == ImageGenProvider.dalle)
+              if (settings.provider == ImageGenProvider.openai)
                 ListTile(
                   leading: const Icon(Icons.cloud, color: AppTheme.textMuted),
                   title: Text(AppLocalizations.of(context)!.dalle),
                   subtitle: Text(AppLocalizations.of(context)!.dalleDescription),
+                ),
+              if (settings.provider == ImageGenProvider.openaiChat)
+                const ListTile(
+                  leading: Icon(Icons.chat, color: AppTheme.textMuted),
+                  title: Text('OpenAI-Chat'),
+                  subtitle: Text('Uses chat/completions API for image generation. Works with compatible APIs that return images via chat format.'),
                 ),
             ],
           ),
@@ -304,6 +426,71 @@ class ImageGenSettingsScreen extends ConsumerWidget {
             ),
           ),
           ...children,
+        ],
+      ),
+    );
+  }
+  
+  Widget _buildModelSelector(BuildContext context, WidgetRef ref, ImageGenSettings settings) {
+    final availableModels = ref.watch(availableModelsProvider);
+    final fetchedState = ref.watch(fetchedModelsProvider);
+    final supportsFetching = settings.provider.supportsFetchingModels;
+    
+    // Determine the current model value
+    final currentModel = availableModels.contains(settings.model) 
+        ? settings.model 
+        : (availableModels.isNotEmpty ? availableModels.first : settings.provider.defaultModel);
+    
+    return ListTile(
+      title: Text(AppLocalizations.of(context)!.model),
+      subtitle: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(ImageGenProvider.getModelDisplayName(currentModel)),
+          if (fetchedState.error != null)
+            Text(
+              'Error fetching models',
+              style: TextStyle(color: Colors.orange, fontSize: 12),
+            ),
+        ],
+      ),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (supportsFetching)
+            IconButton(
+              icon: fetchedState.isLoading
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.refresh, size: 20),
+              tooltip: 'Refresh models',
+              onPressed: settings.enabled && !fetchedState.isLoading
+                  ? () => ref.read(fetchedModelsProvider.notifier).fetchModels()
+                  : null,
+            ),
+          DropdownButton<String>(
+            value: availableModels.contains(currentModel) ? currentModel : null,
+            hint: Text(currentModel),
+            onChanged: settings.enabled
+                ? (value) {
+                    if (value != null) {
+                      ref.read(imageGenSettingsProvider.notifier).setModel(value);
+                    }
+                  }
+                : null,
+            items: availableModels.map((model) {
+              return DropdownMenuItem(
+                value: model,
+                child: Text(
+                  ImageGenProvider.getModelDisplayName(model),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              );
+            }).toList(),
+          ),
         ],
       ),
     );
@@ -373,15 +560,8 @@ class ImageGenSettingsScreen extends ConsumerWidget {
   }
 
   String _getEndpointHint(ImageGenProvider provider) {
-    switch (provider) {
-      case ImageGenProvider.stableDiffusion:
-      case ImageGenProvider.automatic1111:
-        return 'http://localhost:7860';
-      case ImageGenProvider.comfyui:
-        return 'http://localhost:8188';
-      case ImageGenProvider.dalle:
-        return 'https://api.openai.com/v1';
-    }
+    // Just return the provider's default endpoint
+    return provider.defaultEndpoint;
   }
 }
 
@@ -397,9 +577,24 @@ class _ImageGenTestWidget extends ConsumerStatefulWidget {
 
 class _ImageGenTestWidgetState extends ConsumerState<_ImageGenTestWidget> {
   final _controller = TextEditingController();
+  bool _hasText = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller.addListener(_onTextChanged);
+  }
+
+  void _onTextChanged() {
+    final hasText = _controller.text.isNotEmpty;
+    if (hasText != _hasText) {
+      setState(() => _hasText = hasText);
+    }
+  }
 
   @override
   void dispose() {
+    _controller.removeListener(_onTextChanged);
     _controller.dispose();
     super.dispose();
   }
@@ -418,7 +613,7 @@ class _ImageGenTestWidgetState extends ConsumerState<_ImageGenTestWidget> {
             decoration: InputDecoration(
               labelText: AppLocalizations.of(context)!.prompt,
               hintText: AppLocalizations.of(context)!.enterPromptToGenerate,
-              border: OutlineInputBorder(),
+              border: const OutlineInputBorder(),
             ),
             maxLines: 3,
             enabled: widget.enabled && !genState.isGenerating,
@@ -500,18 +695,46 @@ class _ImageGenTestWidgetState extends ConsumerState<_ImageGenTestWidget> {
                   ),
                   if (genState.result!.images.isNotEmpty) ...[
                     const SizedBox(height: 12),
-                    // Would display the generated image here
-                    Container(
-                      height: 200,
-                      decoration: BoxDecoration(
-                        color: AppTheme.darkCard,
-                        borderRadius: BorderRadius.circular(8),
+                    Text(
+                      '${genState.result!.images.length} image(s) generated',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppTheme.textMuted,
                       ),
-                      child: Center(
-                        child: Text(
-                          AppLocalizations.of(context)!.imageWouldBeDisplayed,
-                          style: const TextStyle(color: AppTheme.textMuted),
-                        ),
+                    ),
+                    const SizedBox(height: 8),
+                    // Display generated images
+                    SizedBox(
+                      height: 250,
+                      child: ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: genState.result!.images.length,
+                        itemBuilder: (context, index) {
+                          final imageData = genState.result!.images[index];
+                          return Padding(
+                            padding: const EdgeInsets.only(right: 8),
+                            child: GestureDetector(
+                              onTap: () => _showFullScreenImage(context, imageData),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(8),
+                                child: Image.memory(
+                                  imageData,
+                                  fit: BoxFit.contain,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return Container(
+                                      width: 200,
+                                      height: 200,
+                                      color: AppTheme.darkCard,
+                                      child: const Center(
+                                        child: Icon(Icons.broken_image, color: AppTheme.textMuted),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
+                            ),
+                          );
+                        },
                       ),
                     ),
                   ],
@@ -545,6 +768,46 @@ class _ImageGenTestWidgetState extends ConsumerState<_ImageGenTestWidget> {
             ),
           ],
         ],
+      ),
+    );
+  }
+
+  void _showFullScreenImage(BuildContext context, Uint8List imageData) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: EdgeInsets.zero,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            // Dismiss on tap background
+            GestureDetector(
+              onTap: () => Navigator.of(context).pop(),
+              child: Container(color: Colors.black87),
+            ),
+            // Image with zoom
+            InteractiveViewer(
+              minScale: 0.5,
+              maxScale: 4.0,
+              child: Center(
+                child: Image.memory(
+                  imageData,
+                  fit: BoxFit.contain,
+                ),
+              ),
+            ),
+            // Close button
+            Positioned(
+              top: 40,
+              right: 16,
+              child: IconButton(
+                icon: const Icon(Icons.close, color: Colors.white, size: 32),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

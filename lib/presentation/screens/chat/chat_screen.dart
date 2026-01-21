@@ -27,6 +27,9 @@ import 'package:native_tavern/presentation/widgets/chat/reasoning_widget.dart';
 import 'package:native_tavern/presentation/widgets/chat/slash_command_suggestions.dart';
 import 'package:native_tavern/presentation/widgets/chat/context_usage_indicator.dart';
 import 'package:native_tavern/presentation/providers/context_usage_providers.dart';
+import 'package:native_tavern/presentation/providers/image_gen_providers.dart';
+import 'package:native_tavern/presentation/widgets/chat/image_generation_dialog.dart';
+import 'package:native_tavern/domain/services/image_generation_service.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 import 'package:uuid/uuid.dart';
@@ -876,6 +879,11 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           onCreateBookmark: () {
             _showCreateBookmarkDialog(message.id, actualIndex);
           },
+          onGenerateImage: ref.read(imageGenSettingsProvider).enabled
+              ? () {
+                  _showImageGenerationDialog(message, chatState.character);
+                }
+              : null,
         );
       },
     );
@@ -886,6 +894,25 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       context: context,
       builder: (context) => BookmarksListDialog(chatId: widget.chatId),
     );
+  }
+
+  void _showImageGenerationDialog(ChatMessage message, Character? character) async {
+    final result = await ImageGenerationDialog.show(
+      context,
+      basePrompt: message.content,
+      characterName: character?.name,
+      mode: message.role == MessageRole.assistant 
+          ? ImageGenMode.lastMessage 
+          : ImageGenMode.free,
+    );
+    
+    if (result != null && result.images.isNotEmpty && mounted) {
+      // TODO: Handle the generated image (e.g., save it, show preview, add to chat)
+      final l10n = AppLocalizations.of(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.generationComplete)),
+      );
+    }
   }
 
   void _showCreateBookmarkDialog(String messageId, int messageIndex) async {
@@ -1653,6 +1680,7 @@ class _MessageBubble extends StatefulWidget {
   final VoidCallback onContinueFromHere;
   final VoidCallback onDeleteAndAfter;
   final VoidCallback onCreateBookmark;
+  final VoidCallback? onGenerateImage;
 
   const _MessageBubble({
     super.key,
@@ -1669,6 +1697,7 @@ class _MessageBubble extends StatefulWidget {
     required this.onContinueFromHere,
     required this.onDeleteAndAfter,
     required this.onCreateBookmark,
+    this.onGenerateImage,
   });
 
   @override
@@ -2063,6 +2092,17 @@ class _MessageBubbleState extends State<_MessageBubble> {
                 widget.onCreateBookmark();
               },
             ),
+            
+            // Generate image (if enabled)
+            if (widget.onGenerateImage != null)
+              ListTile(
+                leading: const Icon(Icons.auto_awesome, color: AppTheme.primaryColor),
+                title: Text(l10n.generateImagesUsingAi),
+                onTap: () {
+                  Navigator.pop(context);
+                  widget.onGenerateImage!();
+                },
+              ),
             
             const Divider(),
             
