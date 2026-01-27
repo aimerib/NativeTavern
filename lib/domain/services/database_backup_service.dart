@@ -21,6 +21,7 @@ class DatabaseBackupService {
     final bookmarks = await _db.select(_db.bookmarks).get();
     final tags = await _db.select(_db.tags).get();
     final characterTags = await _db.select(_db.characterTags).get();
+    final globalStates = await _db.select(_db.globalStates).get();
     
     return {
       'characters': _listToMap(characters.map((c) => c.toJson()).toList(), 'id'),
@@ -34,6 +35,7 @@ class DatabaseBackupService {
       'bookmarks': _listToMap(bookmarks.map((b) => b.toJson()).toList(), 'id'),
       'tags': _listToMap(tags.map((t) => t.toJson()).toList(), 'id'),
       'characterTags': characterTags.map((ct) => {'characterId': ct.characterId, 'tagId': ct.tagId}).toList(),
+      'globalStates': _listToMap(globalStates.map((g) => g.toJson()).toList(), 'key'),
     };
   }
   
@@ -206,6 +208,16 @@ class DatabaseBackupService {
       result.bookmarksAdded = bookmarkResult.added;
       result.bookmarksUpdated = bookmarkResult.updated;
       result.bookmarksSkipped = bookmarkResult.skipped;
+    }
+    // 12. Global States (no dependencies)
+    if (data.containsKey('globalStates')) {
+      final gsResult = await _importGlobalStates(
+        data['globalStates'] as Map<String, dynamic>,
+        mode,
+      );
+      // We don't track stats for global states specifically in result object yet, 
+      // but migration happens successfully.
+      debugPrint('[DatabaseBackup] GlobalStates import result: added=${gsResult.added}, updated=${gsResult.updated}, skipped=${gsResult.skipped}');
     }
     
     return result;
@@ -620,7 +632,42 @@ class DatabaseBackupService {
     
     return _ImportEntityResult(added: added, updated: updated, skipped: skipped);
   }
+
+  Future<_ImportEntityResult> _importGlobalStates(Map<String, dynamic> data, ImportMode mode) async {
+    int added = 0, updated = 0, skipped = 0;
+    
+    for (final entry in data.entries) {
+      final json = entry.value as Map<String, dynamic>;
+      final key = json['key']?.toString() ?? entry.key;
+      
+      final existing = await (_db.select(_db.globalStates)..where((t) => t.key.equals(key))).getSingleOrNull();
+      
+      if (existing == null) {
+        await _db.into(_db.globalStates).insert(GlobalState.fromJson(json));
+        added++;
+      } else if (mode == ImportMode.replace) {
+        await (_db.update(_db.globalStates)..where((t) => t.key.equals(key)))
+            .write(GlobalState.fromJson(json).toCompanion(true));
+        updated++;
+      } else if (mode == ImportMode.merge) {
+        final backupTime = _parseDateTime(json['updatedAt']);
+        // If backup is newer or existing has no timestamp, update
+        if (backupTime != null && (existing.updatedAt.isBefore(backupTime))) {
+           await (_db.update(_db.globalStates)..where((t) => t.key.equals(key)))
+              .write(GlobalState.fromJson(json).toCompanion(true));
+           updated++;
+        } else {
+          skipped++;
+        }
+      } else {
+        skipped++;
+      }
+    }
+    
+    return _ImportEntityResult(added: added, updated: updated, skipped: skipped);
+  }
 }
+
 
 /// Import mode
 enum ImportMode {

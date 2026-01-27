@@ -8,11 +8,13 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:native_tavern/data/models/character.dart';
 import 'package:native_tavern/data/models/chat.dart';
+import 'package:native_tavern/data/models/chat_background.dart';
 import 'package:native_tavern/domain/services/chat_export_service.dart';
 import 'package:native_tavern/domain/services/llm_service.dart';
 import 'package:native_tavern/domain/services/slash_command_service.dart';
 import 'package:native_tavern/l10n/generated/app_localizations.dart';
 import 'package:native_tavern/presentation/providers/bookmark_providers.dart';
+import 'package:native_tavern/presentation/providers/background_providers.dart';
 import 'package:native_tavern/presentation/providers/chat_providers.dart';
 import 'package:native_tavern/presentation/providers/persona_providers.dart';
 import 'package:native_tavern/presentation/providers/quick_reply_providers.dart';
@@ -20,6 +22,7 @@ import 'package:native_tavern/presentation/providers/settings_providers.dart';
 import 'package:native_tavern/presentation/theme/app_theme.dart';
 import 'package:native_tavern/presentation/widgets/chat/author_note_dialog.dart';
 import 'package:native_tavern/presentation/widgets/chat/bookmark_dialog.dart';
+import 'package:native_tavern/presentation/widgets/chat/chat_background_widget.dart';
 import 'package:native_tavern/presentation/widgets/chat/message_content_widget.dart';
 import 'package:native_tavern/presentation/widgets/chat/quick_reply_bar.dart';
 import 'package:native_tavern/presentation/widgets/chat/markdown_input_field.dart';
@@ -529,7 +532,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
     return Scaffold(
         appBar: _buildAppBar(chatState),
-        body: Column(
+        body: ChatBackgroundWidget(
+          characterId: chatState.character?.id,
+          child: Column(
         children: [
           // API not configured banner
           if (!isConfigured)
@@ -587,6 +592,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           _buildInputArea(chatState),
           ],
         ),
+      ),
     );
   }
 
@@ -823,6 +829,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
   Widget _buildMessageList(ActiveChatState chatState) {
     final config = ref.read(llmConfigProvider);
+    final background = ref.watch(effectiveBackgroundProvider(chatState.character?.id));
+    final hasBackground = background.type != BackgroundType.none;
     
     return ListView.builder(
       controller: _scrollController,
@@ -844,6 +852,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           character: chatState.character,
           isGenerating: isLast && chatState.isGenerating,
           isLast: isLast,
+          hasBackground: hasBackground,
+          bubbleOpacity: background.bubbleOpacity,
           onSwipe: (swipeIndex) {
             ref.read(activeChatProvider.notifier).swipeMessage(
                   message.id,
@@ -1712,6 +1722,8 @@ class _MessageBubble extends StatefulWidget {
   final Character? character;
   final bool isGenerating;
   final bool isLast;
+  final bool hasBackground;
+  final double bubbleOpacity;
   final void Function(int) onSwipe;
   final void Function(String) onEdit;
   final VoidCallback onDelete;
@@ -1729,6 +1741,8 @@ class _MessageBubble extends StatefulWidget {
     required this.character,
     required this.isGenerating,
     required this.isLast,
+    this.hasBackground = false,
+    this.bubbleOpacity = 0.8,
     required this.onSwipe,
     required this.onEdit,
     required this.onDelete,
@@ -1788,7 +1802,9 @@ class _MessageBubbleState extends State<_MessageBubble> {
                       vertical: 12,
                     ),
                     decoration: BoxDecoration(
-                      color: isUser ? AppTheme.accentColor : AppTheme.darkCard,
+                      color: isUser
+                          ? (widget.hasBackground ? AppTheme.accentColor.withValues(alpha: widget.bubbleOpacity) : AppTheme.accentColor)
+                          : (widget.hasBackground ? AppTheme.darkCard.withValues(alpha: widget.bubbleOpacity) : AppTheme.darkCard),
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: _isEditing

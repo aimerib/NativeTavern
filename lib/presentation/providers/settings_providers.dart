@@ -6,6 +6,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:native_tavern/domain/services/llm_service.dart';
 import 'package:native_tavern/domain/services/chat_summarization_service.dart';
 import 'package:native_tavern/domain/services/tokenizer_service.dart';
+import 'package:drift/drift.dart' as drift;
+import 'package:native_tavern/data/database/database.dart';
+import 'package:native_tavern/core/services/initialization_service.dart';
 
 /// Log a message to the console
 void _log(String message, {String? error, StackTrace? stackTrace}) {
@@ -37,13 +40,13 @@ final llmServiceProvider = Provider<LLMService>((ref) {
   throw UnimplementedError('Must be overridden in ProviderScope');
 });
 
-/// LLM Config notifier
 class LLMConfigNotifier extends StateNotifier<LLMConfig> {
   final SharedPreferences _prefs;
+  final AppDatabase _db;
   static const _configKey = 'llm_config';
   static const _providerConfigKeyPrefix = 'llm_provider_config_';
 
-  LLMConfigNotifier(this._prefs) : super(_defaultConfig()) {
+  LLMConfigNotifier(this._prefs, this._db) : super(_defaultConfig()) {
     _loadConfig();
   }
 
@@ -124,18 +127,41 @@ class LLMConfigNotifier extends StateNotifier<LLMConfig> {
       'apiUrl': state.apiUrl,
       'model': state.model,
     };
-    await _prefs.setString(key, jsonEncode(providerConfig));
+    final jsonStr = jsonEncode(providerConfig);
+    
+    // Save to DB
+    await _db.into(_db.globalStates).insert(
+      GlobalStatesCompanion(
+        key: drift.Value(key),
+        value: drift.Value(jsonStr),
+        updatedAt: drift.Value(DateTime.now()),
+      ),
+      mode: drift.InsertMode.insertOrReplace,
+    );
+    
+    // Keep syncing to prefs for backup safety until fully migrated (optional but good for now)
+    await _prefs.setString(key, jsonStr);
     _log('Saved config for provider ${state.provider.name}: apiUrl=${state.apiUrl}, model=${state.model}');
   }
 
   /// Load a provider's connection settings, or return defaults if none exist
-  Map<String, String> _loadProviderConfig(LLMProvider provider) {
+  Future<Map<String, String>> _loadProviderConfig(LLMProvider provider) async {
     final key = _getProviderConfigKey(provider);
-    final json = _prefs.getString(key);
     
-    if (json != null) {
+    // Try DB first
+    final row = await (_db.select(_db.globalStates)..where((t) => t.key.equals(key))).getSingleOrNull();
+    String? jsonStr;
+    
+    if (row != null) {
+      jsonStr = row.value;
+    } else {
+      // Fallback to prefs
+      jsonStr = _prefs.getString(key);
+    }
+    
+    if (jsonStr != null) {
       try {
-        final map = jsonDecode(json) as Map<String, dynamic>;
+        final map = jsonDecode(jsonStr) as Map<String, dynamic>;
         _log('Loaded saved config for provider ${provider.name}: apiUrl=${map['apiUrl']}, model=${map['model']}');
         return {
           'apiKey': map['apiKey'] as String? ?? '',
@@ -156,12 +182,32 @@ class LLMConfigNotifier extends StateNotifier<LLMConfig> {
     };
   }
 
-  void _loadConfig() {
-    final json = _prefs.getString(_configKey);
-    if (json != null) {
+  Future<void> _loadConfig() async {
+    // 1. Try DB
+    final row = await (_db.select(_db.globalStates)..where((t) => t.key.equals(_configKey))).getSingleOrNull();
+    
+    String? jsonStr;
+    bool needsMigration = false;
+    
+    if (row != null) {
+      jsonStr = row.value;
+    } else {
+      // 2. Fallback to prefs (Migration)
+      jsonStr = _prefs.getString(_configKey);
+      if (jsonStr != null) {
+        needsMigration = true;
+      }
+    }
+
+    if (jsonStr != null) {
       try {
-        final map = jsonDecode(json) as Map<String, dynamic>;
+        final map = jsonDecode(jsonStr) as Map<String, dynamic>;
         state = LLMConfig.fromJson(map);
+        
+        if (needsMigration) {
+          _log('Migrating LLM config from SharedPreferences to Database');
+          _saveConfig(); // Save to DB
+        }
       } catch (e) {
         // Use default config on error
       }
@@ -169,20 +215,33 @@ class LLMConfigNotifier extends StateNotifier<LLMConfig> {
   }
 
   Future<void> _saveConfig() async {
-    await _prefs.setString(_configKey, jsonEncode(state.toJson()));
+    final jsonStr = jsonEncode(state.toJson());
+    
+    // Save to DB
+    await _db.into(_db.globalStates).insert(
+      GlobalStatesCompanion(
+        key: drift.Value(_configKey),
+        value: drift.Value(jsonStr),
+        updatedAt: drift.Value(DateTime.now()),
+      ),
+      mode: drift.InsertMode.insertOrReplace,
+    );
+    
+    // Sync to Prefs for redundancy/legacy
+    await _prefs.setString(_configKey, jsonStr);
   }
 
-  void updateProvider(LLMProvider provider) {
+  Future<void> updateProvider(LLMProvider provider) async {
     // Don't do anything if switching to the same provider
     if (provider == state.provider) {
       return;
     }
 
     // Save current provider's connection settings first
-    _saveCurrentProviderConfig();
+    await _saveCurrentProviderConfig();
     
     // Load the new provider's saved settings (or defaults)
-    final newProviderConfig = _loadProviderConfig(provider);
+    final newProviderConfig = await _loadProviderConfig(provider);
 
     state = state.copyWith(
       provider: provider,
@@ -190,7 +249,7 @@ class LLMConfigNotifier extends StateNotifier<LLMConfig> {
       apiUrl: newProviderConfig['apiUrl'],
       model: newProviderConfig['model'],
     );
-    _saveConfig();
+    await _saveConfig();
     
     _log('Switched to provider ${provider.name}: apiUrl=${state.apiUrl}, model=${state.model}');
   }
@@ -325,10 +384,10 @@ class LLMConfigNotifier extends StateNotifier<LLMConfig> {
   }
 }
 
-/// Provider for LLM configuration
 final llmConfigProvider = StateNotifierProvider<LLMConfigNotifier, LLMConfig>((ref) {
   final prefs = ref.watch(sharedPreferencesProvider);
-  return LLMConfigNotifier(prefs);
+  final db = ref.watch(databaseProvider);
+  return LLMConfigNotifier(prefs, db);
 });
 
 /// App settings state
@@ -405,18 +464,39 @@ class AppSettings {
 /// App settings notifier
 class AppSettingsNotifier extends StateNotifier<AppSettings> {
   final SharedPreferences _prefs;
+  final AppDatabase _db;
   static const _settingsKey = 'app_settings';
 
-  AppSettingsNotifier(this._prefs) : super(const AppSettings()) {
+  AppSettingsNotifier(this._prefs, this._db) : super(const AppSettings()) {
     _loadSettings();
   }
 
-  void _loadSettings() {
-    final json = _prefs.getString(_settingsKey);
-    if (json != null) {
+  Future<void> _loadSettings() async {
+    // 1. Try DB
+    final row = await (_db.select(_db.globalStates)..where((t) => t.key.equals(_settingsKey))).getSingleOrNull();
+    
+    String? jsonStr;
+    bool needsMigration = false;
+    
+    if (row != null) {
+      jsonStr = row.value;
+    } else {
+      // 2. Fallback to prefs
+      jsonStr = _prefs.getString(_settingsKey);
+      if (jsonStr != null) {
+        needsMigration = true;
+      }
+    }
+    
+    if (jsonStr != null) {
       try {
-        final map = jsonDecode(json) as Map<String, dynamic>;
+        final map = jsonDecode(jsonStr) as Map<String, dynamic>;
         state = AppSettings.fromJson(map);
+        
+        if (needsMigration) {
+          _log('Migrating App Settings from SharedPreferences to Database');
+          _saveSettings();
+        }
       } catch (e) {
         // Use default settings on error
       }
@@ -424,7 +504,20 @@ class AppSettingsNotifier extends StateNotifier<AppSettings> {
   }
 
   Future<void> _saveSettings() async {
-    await _prefs.setString(_settingsKey, jsonEncode(state.toJson()));
+    final jsonStr = jsonEncode(state.toJson());
+    
+    // Save to DB
+    await _db.into(_db.globalStates).insert(
+      GlobalStatesCompanion(
+        key: drift.Value(_settingsKey),
+        value: drift.Value(jsonStr),
+        updatedAt: drift.Value(DateTime.now()),
+      ),
+      mode: drift.InsertMode.insertOrReplace,
+    );
+    
+    // Sync to Prefs
+    await _prefs.setString(_settingsKey, jsonStr);
   }
 
   void updateTheme(String theme) {
@@ -477,7 +570,8 @@ class AppSettingsNotifier extends StateNotifier<AppSettings> {
 final appSettingsProvider =
     StateNotifierProvider<AppSettingsNotifier, AppSettings>((ref) {
   final prefs = ref.watch(sharedPreferencesProvider);
-  return AppSettingsNotifier(prefs);
+  final db = ref.watch(databaseProvider);
+  return AppSettingsNotifier(prefs, db);
 });
 
 /// API connection test state

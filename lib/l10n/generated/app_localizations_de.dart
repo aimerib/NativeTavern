@@ -3640,4 +3640,11 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get googleDriveBackups => 'Google Drive Backups';
+
+  @override
+  String get bubbleOpacity => 'Message Opacity';
+
+  @override
+  String get bubbleOpacityHelp =>
+      'Controls the transparency of message bubbles when a background is active.';
 }

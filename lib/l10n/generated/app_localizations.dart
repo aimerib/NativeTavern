@@ -6672,6 +6672,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Google Drive Backups'**
   String get googleDriveBackups;
+
+  /// Label for message bubble opacity slider
+  ///
+  /// In en, this message translates to:
+  /// **'Message Opacity'**
+  String get bubbleOpacity;
+
+  /// Helper text for message bubble opacity slider
+  ///
+  /// In en, this message translates to:
+  /// **'Controls the transparency of message bubbles when a background is active.'**
+  String get bubbleOpacityHelp;
 }
 
 class _AppLocalizationsDelegate

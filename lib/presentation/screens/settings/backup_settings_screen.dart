@@ -882,6 +882,7 @@ class _BackupSettingsScreenState extends ConsumerState<BackupSettingsScreen> {
               // Actually restore data to database
               final importMode = _convertToImportMode(restoreMode);
               final actualData = data['data'] as Map<String, dynamic>? ?? data;
+              
               await dbBackupService.importData(
                 data: actualData,
                 mode: importMode,
@@ -989,6 +990,7 @@ class _BackupSettingsScreenState extends ConsumerState<BackupSettingsScreen> {
               // Actually restore data to database
               final importMode = _convertToImportMode(restoreMode);
               final actualData = data['data'] as Map<String, dynamic>? ?? data;
+              
               await dbBackupService.importData(
                 data: actualData,
                 mode: importMode,

@@ -204,6 +204,17 @@ class CharacterTags extends Table {
   Set<Column> get primaryKey => {characterId, tagId};
 }
 
+/// Global States table - Key-Value store for app settings, active configs, etc.
+/// Replaces SharedPreferences for critical data that needs to be backed up.
+class GlobalStates extends Table {
+  TextColumn get key => text()();
+  TextColumn get value => text()(); // JSON content
+  DateTimeColumn get updatedAt => dateTime()();
+
+  @override
+  Set<Column> get primaryKey => {key};
+}
+
 /// App database
 @DriftDatabase(tables: [
   Characters,
@@ -217,12 +228,13 @@ class CharacterTags extends Table {
   Bookmarks,
   Tags,
   CharacterTags,
+  GlobalStates,
 ])
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 12;
+  int get schemaVersion => 13;
 
   @override
   MigrationStrategy get migration {
@@ -288,7 +300,12 @@ class AppDatabase extends _$AppDatabase {
           await m.addColumn(worldInfos, worldInfos.matchWholeWords);
           await m.addColumn(worldInfos, worldInfos.useGroupScoring);
           await m.addColumn(worldInfos, worldInfos.recursionDepth);
+          await m.addColumn(worldInfos, worldInfos.recursionDepth);
           await m.addColumn(worldInfos, worldInfos.extensionsJson);
+        }
+        if (from < 13) {
+          // Add GlobalStates table for settings persistence
+          await m.createTable(globalStates);
         }
       },
     );

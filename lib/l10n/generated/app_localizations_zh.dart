@@ -3615,6 +3615,13 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get googleDriveBackups => 'Google Drive 备份';
+
+  @override
+  String get bubbleOpacity => 'Message Opacity';
+
+  @override
+  String get bubbleOpacityHelp =>
+      'Controls the transparency of message bubbles when a background is active.';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).

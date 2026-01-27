@@ -19,6 +19,7 @@ class ChatBackground {
   final double opacity; // Background opacity (0.0 - 1.0)
   final bool blur; // Whether to blur the background
   final double blurAmount; // Blur amount (0-20)
+  final double bubbleOpacity; // Opacity of chat bubbles (0.0 - 1.0)
 
   const ChatBackground({
     this.type = BackgroundType.none,
@@ -30,6 +31,7 @@ class ChatBackground {
     this.opacity = 1.0,
     this.blur = false,
     this.blurAmount = 5.0,
+    this.bubbleOpacity = 0.8,
   });
 
   /// Default (no background)
@@ -41,6 +43,7 @@ class ChatBackground {
       type: BackgroundType.color,
       color: hexColor,
       opacity: opacity,
+      bubbleOpacity: 1.0,
     );
   }
 
@@ -55,6 +58,7 @@ class ChatBackground {
       gradientColors: colors,
       gradientAngle: angle,
       opacity: opacity,
+      bubbleOpacity: 1.0,
     );
   }
 
@@ -64,6 +68,7 @@ class ChatBackground {
     double opacity = 1.0,
     bool blur = false,
     double blurAmount = 5.0,
+    double bubbleOpacity = 0.8,
   }) {
     return ChatBackground(
       type: BackgroundType.image,
@@ -71,6 +76,7 @@ class ChatBackground {
       opacity: opacity,
       blur: blur,
       blurAmount: blurAmount,
+      bubbleOpacity: bubbleOpacity,
     );
   }
 
@@ -80,6 +86,7 @@ class ChatBackground {
     double opacity = 1.0,
     bool blur = false,
     double blurAmount = 5.0,
+    double bubbleOpacity = 0.8,
   }) {
     return ChatBackground(
       type: BackgroundType.image,
@@ -87,6 +94,7 @@ class ChatBackground {
       opacity: opacity,
       blur: blur,
       blurAmount: blurAmount,
+      bubbleOpacity: bubbleOpacity,
     );
   }
 
@@ -100,6 +108,7 @@ class ChatBackground {
     double? opacity,
     bool? blur,
     double? blurAmount,
+    double? bubbleOpacity,
   }) {
     return ChatBackground(
       type: type ?? this.type,
@@ -111,6 +120,7 @@ class ChatBackground {
       opacity: opacity ?? this.opacity,
       blur: blur ?? this.blur,
       blurAmount: blurAmount ?? this.blurAmount,
+      bubbleOpacity: bubbleOpacity ?? this.bubbleOpacity,
     );
   }
 
@@ -125,6 +135,7 @@ class ChatBackground {
       'opacity': opacity,
       'blur': blur,
       'blurAmount': blurAmount,
+      'bubbleOpacity': bubbleOpacity,
     };
   }
 
@@ -142,6 +153,7 @@ class ChatBackground {
       opacity: (json['opacity'] as num?)?.toDouble() ?? 1.0,
       blur: json['blur'] as bool? ?? false,
       blurAmount: (json['blurAmount'] as num?)?.toDouble() ?? 5.0,
+      bubbleOpacity: (json['bubbleOpacity'] as num?)?.toDouble() ?? 0.8,
     );
   }
 

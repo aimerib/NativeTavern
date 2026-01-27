@@ -151,7 +151,7 @@ class _BackgroundSettingsScreenState extends ConsumerState<BackgroundSettingsScr
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     decoration: BoxDecoration(
-                      color: AppTheme.darkCard.withValues(alpha: 0.9),
+                      color: AppTheme.darkCard.withValues(alpha: _currentBackground.bubbleOpacity),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
@@ -165,7 +165,7 @@ class _BackgroundSettingsScreenState extends ConsumerState<BackgroundSettingsScr
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       decoration: BoxDecoration(
-                        color: AppTheme.accentColor.withValues(alpha: 0.9),
+                        color: AppTheme.accentColor.withValues(alpha: _currentBackground.bubbleOpacity),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
@@ -317,6 +317,34 @@ class _BackgroundSettingsScreenState extends ConsumerState<BackgroundSettingsScr
                 },
               ),
             ],
+            
+            const Divider(),
+            
+            // Bubble opacity slider
+            Row(
+              children: [
+                const Icon(Icons.chat_bubble_outline, size: 20),
+                const SizedBox(width: 12),
+                Text(AppLocalizations.of(context).bubbleOpacity),
+                const SizedBox(width: 4),
+                Tooltip(
+                  message: AppLocalizations.of(context).bubbleOpacityHelp,
+                  triggerMode: TooltipTriggerMode.tap,
+                  child: const Icon(Icons.info_outline, size: 16, color: AppTheme.textMuted),
+                ),
+                const Spacer(),
+                Text('${(_currentBackground.bubbleOpacity * 100).round()}%'),
+              ],
+            ),
+            Slider(
+              value: _currentBackground.bubbleOpacity,
+              min: 0.0,
+              max: 1.0,
+              divisions: 20,
+              onChanged: (value) {
+                _saveBackground(_currentBackground.copyWith(bubbleOpacity: value));
+              },
+            ),
           ],
         ),
       ),
@@ -349,6 +377,7 @@ class _BackgroundSettingsScreenState extends ConsumerState<BackgroundSettingsScr
             opacity: _currentBackground.opacity,
             blur: _currentBackground.blur,
             blurAmount: _currentBackground.blurAmount,
+            bubbleOpacity: _currentBackground.bubbleOpacity,
           ));
         }
       }
@@ -396,6 +425,7 @@ class _BackgroundSettingsScreenState extends ConsumerState<BackgroundSettingsScr
                   opacity: _currentBackground.opacity,
                   blur: _currentBackground.blur,
                   blurAmount: _currentBackground.blurAmount,
+                  bubbleOpacity: _currentBackground.bubbleOpacity,
                 ));
                 Navigator.pop(context);
               }

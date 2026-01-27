@@ -6197,5 +6197,14 @@
   "googleDriveBackups": "Google Drive Backups",
   "@googleDriveBackups": {
     "description": "Google Drive backups section title"
+  },
+  "bubbleOpacity": "Message Opacity",
+  "@bubbleOpacity": {
+    "description": "Label for message bubble opacity slider"
+  },
+
+  "bubbleOpacityHelp": "Controls the transparency of message bubbles when a background is active.",
+  "@bubbleOpacityHelp": {
+    "description": "Helper text for message bubble opacity slider"
   }
 }
