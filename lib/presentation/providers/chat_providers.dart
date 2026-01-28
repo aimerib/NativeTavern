@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
@@ -91,6 +92,9 @@ class ActiveChatNotifier extends StateNotifier<ActiveChatState> {
   final WorldInfoMatcher _worldInfoMatcher;
   final ChatSummarizationService _summarizationService;
   final Ref _ref;
+  
+  // Track cancellation flag for stream processing
+  bool _isCancelling = false;
 
   ActiveChatNotifier({
     required ChatRepository chatRepository,
@@ -108,6 +112,16 @@ class ActiveChatNotifier extends StateNotifier<ActiveChatState> {
         _summarizationService = summarizationService,
         _ref = ref,
         super(const ActiveChatState());
+
+  /// Cancel current generation
+  Future<void> cancelGeneration() async {
+    _isCancelling = true;
+    state = state.copyWith(isGenerating: false);
+    // Reset flag after a short delay
+    Future.delayed(const Duration(milliseconds: 500), () {
+      _isCancelling = false;
+    });
+  }
 
   /// Load a chat by ID
   Future<void> loadChat(String chatId) async {
@@ -465,6 +479,11 @@ class ActiveChatNotifier extends StateNotifier<ActiveChatState> {
         final contentBuffer = StringBuffer();
         final reasoningBuffer = StringBuffer();
         await for (final chunk in _llmService.generateStreamWithReasoning(context, config)) {
+          // Check if generation was cancelled
+          if (_isCancelling) {
+            break;
+          }
+          
           if (chunk.isReasoningChunk && chunk.reasoning != null) {
             reasoningBuffer.write(chunk.reasoning);
           }

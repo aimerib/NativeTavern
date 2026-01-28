@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../data/models/chat_background.dart';
+import '../../data/repositories/character_repository.dart';
 import 'settings_providers.dart';
 
 const String _globalBackgroundKey = 'global_chat_background';
@@ -113,14 +114,39 @@ class CharacterBackgroundNotifier extends StateNotifier<ChatBackground?> {
 }
 
 /// Provider that returns the effective background for a chat
-/// (character-specific if set, otherwise global)
-final effectiveBackgroundProvider = Provider.family<ChatBackground, String?>((ref, characterId) {
+/// Priority: character-specific background > character avatar (if enabled) > global background
+final effectiveBackgroundProvider = FutureProvider.family<ChatBackground, String?>((ref, characterId) async {
+  // Check if we should use character avatar as background
+  final useCharacterAvatar = ref.watch(appSettingsProvider.select((s) => s.useCharacterAvatarAsBackground));
+  
   if (characterId != null) {
+    // 1. Check for character-specific background
     final characterBg = ref.watch(characterBackgroundProvider(characterId));
     if (characterBg != null && characterBg.type != BackgroundType.none) {
       return characterBg;
     }
+    
+    // 2. Check for character avatar if enabled
+    if (useCharacterAvatar) {
+      try {
+        final repo = ref.watch(characterRepositoryProvider);
+        final character = await repo.getCharacter(characterId);
+        if (character?.assets?.avatarPath != null) {
+          return ChatBackground.imagePath(
+            character!.assets!.avatarPath!,
+            opacity: 0.3,
+            blur: true,
+            blurAmount: 10.0,
+            bubbleOpacity: 0.9,
+          );
+        }
+      } catch (e) {
+        // If character not found or error, fall through to global background
+      }
+    }
   }
+  
+  // 3. Fall back to global background
   return ref.watch(globalBackgroundProvider);
 });
 

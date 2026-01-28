@@ -400,6 +400,7 @@ class AppSettings {
   final bool confirmBeforeDelete;
   final bool autoSaveChats;
   final bool enableDebugLog;
+  final bool useCharacterAvatarAsBackground;
 
   const AppSettings({
     this.theme = 'dark',
@@ -410,6 +411,7 @@ class AppSettings {
     this.confirmBeforeDelete = true,
     this.autoSaveChats = true,
     this.enableDebugLog = false,
+    this.useCharacterAvatarAsBackground = true,
   });
 
   AppSettings copyWith({
@@ -421,6 +423,7 @@ class AppSettings {
     bool? confirmBeforeDelete,
     bool? autoSaveChats,
     bool? enableDebugLog,
+    bool? useCharacterAvatarAsBackground,
   }) {
     return AppSettings(
       theme: theme ?? this.theme,
@@ -432,6 +435,7 @@ class AppSettings {
       confirmBeforeDelete: confirmBeforeDelete ?? this.confirmBeforeDelete,
       autoSaveChats: autoSaveChats ?? this.autoSaveChats,
       enableDebugLog: enableDebugLog ?? this.enableDebugLog,
+      useCharacterAvatarAsBackground: useCharacterAvatarAsBackground ?? this.useCharacterAvatarAsBackground,
     );
   }
 
@@ -444,6 +448,7 @@ class AppSettings {
         'confirmBeforeDelete': confirmBeforeDelete,
         'autoSaveChats': autoSaveChats,
         'enableDebugLog': enableDebugLog,
+        'useCharacterAvatarAsBackground': useCharacterAvatarAsBackground,
       };
 
   factory AppSettings.fromJson(Map<String, dynamic> json) {
@@ -457,6 +462,7 @@ class AppSettings {
       confirmBeforeDelete: json['confirmBeforeDelete'] as bool? ?? true,
       autoSaveChats: json['autoSaveChats'] as bool? ?? true,
       enableDebugLog: json['enableDebugLog'] as bool? ?? false,
+      useCharacterAvatarAsBackground: json['useCharacterAvatarAsBackground'] as bool? ?? true,
     );
   }
 }
@@ -557,6 +563,11 @@ class AppSettingsNotifier extends StateNotifier<AppSettings> {
 
   void updateDebugLog(bool enabled) {
     state = state.copyWith(enableDebugLog: enabled);
+    _saveSettings();
+  }
+
+  void updateUseCharacterAvatarAsBackground(bool enabled) {
+    state = state.copyWith(useCharacterAvatarAsBackground: enabled);
     _saveSettings();
   }
 

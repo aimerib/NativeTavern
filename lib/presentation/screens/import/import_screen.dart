@@ -17,35 +17,70 @@ final importServiceProvider = Provider<ImportService>((ref) {
   throw UnimplementedError('Must be overridden in ProviderScope');
 });
 
+/// Import result for a single file
+class ImportResult {
+  final String fileName;
+  final String filePath;
+  final Character? character;
+  final String? error;
+  final bool isProcessing;
+
+  const ImportResult({
+    required this.fileName,
+    required this.filePath,
+    this.character,
+    this.error,
+    this.isProcessing = false,
+  });
+
+  ImportResult copyWith({
+    Character? character,
+    String? error,
+    bool? isProcessing,
+  }) {
+    return ImportResult(
+      fileName: fileName,
+      filePath: filePath,
+      character: character ?? this.character,
+      error: error,
+      isProcessing: isProcessing ?? this.isProcessing,
+    );
+  }
+}
+
 /// Import state
 class ImportState {
   final bool isLoading;
   final String? error;
-  final Character? previewCharacter;
-  final String? filePath;
-  final ImportFormat? format;
+  final List<ImportResult> results;
+  final int totalFiles;
+  final int processedFiles;
 
   const ImportState({
     this.isLoading = false,
     this.error,
-    this.previewCharacter,
-    this.filePath,
-    this.format,
+    this.results = const [],
+    this.totalFiles = 0,
+    this.processedFiles = 0,
   });
+
+  bool get hasResults => results.isNotEmpty;
+  int get successCount => results.where((r) => r.character != null).length;
+  int get errorCount => results.where((r) => r.error != null).length;
 
   ImportState copyWith({
     bool? isLoading,
     String? error,
-    Character? previewCharacter,
-    String? filePath,
-    ImportFormat? format,
+    List<ImportResult>? results,
+    int? totalFiles,
+    int? processedFiles,
   }) {
     return ImportState(
       isLoading: isLoading ?? this.isLoading,
       error: error,
-      previewCharacter: previewCharacter ?? this.previewCharacter,
-      filePath: filePath ?? this.filePath,
-      format: format ?? this.format,
+      results: results ?? this.results,
+      totalFiles: totalFiles ?? this.totalFiles,
+      processedFiles: processedFiles ?? this.processedFiles,
     );
   }
 }
@@ -62,17 +97,14 @@ class ImportNotifier extends StateNotifier<ImportState> {
       final result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
         allowedExtensions: ['png', 'charx', 'json'],
-        allowMultiple: false,
+        allowMultiple: true, // Enable batch import
       );
 
       if (result != null && result.files.isNotEmpty) {
-        final file = result.files.first;
-        if (file.path != null) {
-          await loadFile(file.path!);
-        }
+        await loadFiles(result.files.where((f) => f.path != null).map((f) => f.path!).toList());
       }
     } catch (e) {
-      state = state.copyWith(error: 'Failed to pick file: $e'); // Error already handled in UI
+      state = state.copyWith(error: 'Failed to pick file: $e');
     }
   }
 
@@ -81,14 +113,13 @@ class ImportNotifier extends StateNotifier<ImportState> {
     try {
       state = state.copyWith(isLoading: true, error: null);
       
-      final XFile? image = await _imagePicker.pickImage(
-        source: ImageSource.gallery,
+      final List<XFile> images = await _imagePicker.pickMultiImage(
         maxWidth: 4096,
         maxHeight: 4096,
       );
 
-      if (image != null) {
-        await loadFile(image.path);
+      if (images.isNotEmpty) {
+        await loadFiles(images.map((img) => img.path).toList());
       } else {
         state = state.copyWith(isLoading: false);
       }
@@ -100,55 +131,77 @@ class ImportNotifier extends StateNotifier<ImportState> {
     }
   }
 
-  Future<void> loadFile(String path) async {
-    state = state.copyWith(isLoading: true, error: null);
+  Future<void> loadFiles(List<String> paths) async {
+    if (paths.isEmpty) return;
 
-    try {
-      final extension = path.split('.').last.toLowerCase();
-      ImportFormat format;
-
-      switch (extension) {
-        case 'png':
-          format = ImportFormat.png;
-          break;
-        case 'charx':
-          format = ImportFormat.charx;
-          break;
-        case 'json':
-          format = ImportFormat.json;
-          break;
-        default:
-          throw Exception('Unsupported file format: $extension'); // Will be caught and shown
-      }
-
-      Character? character;
-      
-      switch (format) {
-        case ImportFormat.png:
-          character = await _importService.importFromPng(path);
-          break;
-        case ImportFormat.charx:
-          character = await _importService.importFromCharX(path);
-          break;
-        case ImportFormat.json:
-          final file = File(path);
-          final json = await file.readAsString();
-          character = await _importService.importFromJson(json);
-          break;
-      }
-
-      state = state.copyWith(
-        isLoading: false,
-        previewCharacter: character,
+    // Initialize results with all file paths
+    final results = paths.map((path) {
+      final fileName = path.split('/').last;
+      return ImportResult(
+        fileName: fileName,
         filePath: path,
-        format: format,
+        isProcessing: true,
       );
-    } catch (e) {
-      state = state.copyWith(
-        isLoading: false,
-        error: 'Failed to load character: $e',
-      );
+    }).toList();
+
+    state = state.copyWith(
+      isLoading: true,
+      error: null,
+      results: results,
+      totalFiles: paths.length,
+      processedFiles: 0,
+    );
+
+    // Process each file
+    for (int i = 0; i < paths.length; i++) {
+      final path = paths[i];
+      try {
+        final extension = path.split('.').last.toLowerCase();
+        Character? character;
+
+        switch (extension) {
+          case 'png':
+            character = await _importService.importFromPng(path);
+            break;
+          case 'charx':
+            character = await _importService.importFromCharX(path);
+            break;
+          case 'json':
+            final file = File(path);
+            final json = await file.readAsString();
+            character = await _importService.importFromJson(json);
+            break;
+          default:
+            throw Exception('Unsupported file format: $extension');
+        }
+
+        // Update result with character
+        final updatedResults = List<ImportResult>.from(state.results);
+        updatedResults[i] = updatedResults[i].copyWith(
+          character: character,
+          isProcessing: false,
+        );
+
+        state = state.copyWith(
+          results: updatedResults,
+          processedFiles: i + 1,
+        );
+      } catch (e) {
+        // Update result with error
+        final updatedResults = List<ImportResult>.from(state.results);
+        updatedResults[i] = updatedResults[i].copyWith(
+          error: e.toString(),
+          isProcessing: false,
+        );
+
+        state = state.copyWith(
+          results: updatedResults,
+          processedFiles: i + 1,
+        );
+      }
     }
+
+    state = state.copyWith(isLoading: false);
   }
 
   void clear() {
@@ -187,23 +240,27 @@ class _ImportScreenState extends ConsumerState<ImportScreen> {
   @override
   Widget build(BuildContext context) {
     final importState = ref.watch(importStateProvider);
+    final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(AppLocalizations.of(context)!.importCharacter),
+        title: Text(l10n.importCharacter),
         actions: [
-          if (importState.previewCharacter != null)
+          if (importState.hasResults)
             IconButton(
               icon: const Icon(Icons.close),
               onPressed: () => ref.read(importStateProvider.notifier).clear(),
-              tooltip: AppLocalizations.of(context)!.clear,
+              tooltip: l10n.clear,
             ),
         ],
       ),
-      body: importState.previewCharacter != null
-          ? _CharacterPreview(
-              character: importState.previewCharacter!,
-              onImport: () => _importCharacter(context, ref),
+      body: importState.hasResults
+          ? _BatchImportResults(
+              results: importState.results,
+              isLoading: importState.isLoading,
+              totalFiles: importState.totalFiles,
+              processedFiles: importState.processedFiles,
+              onImportAll: () => _importAllCharacters(context, ref),
             )
           : _FilePickerView(
               isLoading: importState.isLoading,
@@ -214,48 +271,59 @@ class _ImportScreenState extends ConsumerState<ImportScreen> {
     );
   }
 
-  Future<void> _importCharacter(BuildContext context, WidgetRef ref) async {
+  Future<void> _importAllCharacters(BuildContext context, WidgetRef ref) async {
     final importState = ref.read(importStateProvider);
-    if (importState.previewCharacter == null) return;
+    if (!importState.hasResults) return;
 
-    try {
-      // Add the character
-      final character = await ref
-          .read(characterListProvider.notifier)
-          .addCharacter(importState.previewCharacter!);
+    final l10n = AppLocalizations.of(context)!;
+    int successCount = 0;
+    int errorCount = 0;
 
-      // If the character has an embedded lorebook, create a WorldInfo for it
-      if (importState.previewCharacter!.characterBook != null &&
-          importState.previewCharacter!.characterBook!.entries.isNotEmpty) {
-        await _importEmbeddedLorebook(
-          ref,
-          character.id,
-          importState.previewCharacter!.characterBook!,
-          importState.previewCharacter!.name,
-        );
+    for (final result in importState.results) {
+      if (result.character == null) continue;
+
+      try {
+        // Add the character
+        final character = await ref
+            .read(characterListProvider.notifier)
+            .addCharacter(result.character!);
+
+        // If the character has an embedded lorebook, create a WorldInfo for it
+        if (result.character!.characterBook != null &&
+            result.character!.characterBook!.entries.isNotEmpty) {
+          await _importEmbeddedLorebook(
+            ref,
+            character.id,
+            result.character!.characterBook!,
+            result.character!.name,
+          );
+        }
+
+        successCount++;
+      } catch (e) {
+        errorCount++;
       }
+    }
 
-      if (context.mounted) {
-        final hasLorebook = importState.previewCharacter!.characterBook?.entries.isNotEmpty ?? false;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              hasLorebook
-                  ? 'Imported "${importState.previewCharacter!.name}" with embedded lorebook!'
-                  : 'Imported "${importState.previewCharacter!.name}" successfully!',
-            ),
-          ),
-        );
+    if (context.mounted) {
+      // Show summary message
+      final message = successCount > 0
+          ? errorCount > 0
+              ? '导入成功 $successCount 个，失败 $errorCount 个'
+              : '成功导入 $successCount 个角色卡！'
+          : '所有导入都失败了';
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: errorCount > 0 ? Colors.orange : Colors.green,
+        ),
+      );
+
+      // Clear and go back if any successful
+      if (successCount > 0) {
+        ref.read(importStateProvider.notifier).clear();
         context.pop();
-      }
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(AppLocalizations.of(context)!.failedToImport(e.toString())),
-            backgroundColor: Colors.red,
-          ),
-        );
       }
     }
   }
@@ -355,12 +423,12 @@ class _FilePickerView extends StatelessWidget {
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      'Select a character card',
+                      '选择角色卡文件',
                       style: Theme.of(context).textTheme.titleMedium,
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Supports PNG, CharX, and JSON formats',
+                      '支持批量导入 • PNG, CharX, JSON 格式',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                             color: AppTheme.textMuted,
                           ),
@@ -495,6 +563,212 @@ class _FormatTile extends StatelessWidget {
         ),
       ],
     );
+  }
+}
+
+class _BatchImportResults extends StatelessWidget {
+  final List<ImportResult> results;
+  final bool isLoading;
+  final int totalFiles;
+  final int processedFiles;
+  final VoidCallback onImportAll;
+
+  const _BatchImportResults({
+    required this.results,
+    required this.isLoading,
+    required this.totalFiles,
+    required this.processedFiles,
+    required this.onImportAll,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final successCount = results.where((r) => r.character != null).length;
+    final errorCount = results.where((r) => r.error != null).length;
+    final processingCount = results.where((r) => r.isProcessing).length;
+
+    return Column(
+      children: [
+        // Progress header
+        Container(
+          padding: const EdgeInsets.all(16),
+          color: AppTheme.darkCard,
+          child: Column(
+            children: [
+              if (isLoading) ...[
+                const LinearProgressIndicator(),
+                const SizedBox(height: 12),
+                Text(
+                  '处理中: $processedFiles / $totalFiles',
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+              ] else ...[
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    _StatChip(
+                      icon: Icons.check_circle,
+                      label: '成功',
+                      count: successCount,
+                      color: Colors.green,
+                    ),
+                    _StatChip(
+                      icon: Icons.error,
+                      label: '失败',
+                      count: errorCount,
+                      color: Colors.red,
+                    ),
+                    _StatChip(
+                      icon: Icons.folder,
+                      label: '总计',
+                      count: totalFiles,
+                      color: AppTheme.accentColor,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                if (successCount > 0)
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: onImportAll,
+                      icon: const Icon(Icons.download),
+                      label: Text('导入全部 ($successCount 个角色卡)'),
+                      style: ElevatedButton.styleFrom(
+                        minimumSize: const Size(0, 48),
+                      ),
+                    ),
+                  ),
+              ],
+            ],
+          ),
+        ),
+
+        // Results list
+        Expanded(
+          child: ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: results.length,
+            itemBuilder: (context, index) {
+              final result = results[index];
+              return _ImportResultCard(result: result);
+            },
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _StatChip extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final int count;
+  final Color color;
+
+  const _StatChip({
+    required this.icon,
+    required this.label,
+    required this.count,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Icon(icon, color: color, size: 32),
+        const SizedBox(height: 4),
+        Text(
+          '$count',
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                color: color,
+                fontWeight: FontWeight.bold,
+              ),
+        ),
+        Text(
+          label,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: AppTheme.textMuted,
+              ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ImportResultCard extends StatelessWidget {
+  final ImportResult result;
+
+  const _ImportResultCard({required this.result});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            // Status icon
+            _buildStatusIcon(),
+            const SizedBox(width: 16),
+            
+            // File info
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    result.character?.name ?? result.fileName,
+                    style: Theme.of(context).textTheme.titleSmall,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    result.fileName,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: AppTheme.textMuted,
+                        ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  if (result.error != null) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      result.error!,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: Colors.red,
+                          ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatusIcon() {
+    if (result.isProcessing) {
+      return const SizedBox(
+        width: 24,
+        height: 24,
+        child: CircularProgressIndicator(strokeWidth: 2),
+      );
+    } else if (result.character != null) {
+      return const Icon(Icons.check_circle, color: Colors.green, size: 32);
+    } else if (result.error != null) {
+      return const Icon(Icons.error, color: Colors.red, size: 32);
+    } else {
+      return const Icon(Icons.help_outline, color: AppTheme.textMuted, size: 32);
+    }
   }
 }
 

@@ -269,6 +269,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       _pendingAttachments.clear();
     });
     
+    // Hide keyboard on mobile platforms
+    _focusNode.unfocus();
+    
     await ref.read(activeChatProvider.notifier).sendMessage(
       content,
       config,
@@ -290,6 +293,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       }
       _messageController.clear();
       setState(() => _showSlashSuggestions = false);
+      
+      // Hide keyboard on mobile platforms
+      _focusNode.unfocus();
+      
       await ref.read(activeChatProvider.notifier).sendMessage(input, config);
       _scrollToBottom();
       return;
@@ -305,6 +312,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     
     _messageController.clear();
     setState(() => _showSlashSuggestions = false);
+    
+    // Hide keyboard on mobile platforms
+    _focusNode.unfocus();
     
     await _executeCommand(command, argument);
   }
@@ -829,7 +839,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
   Widget _buildMessageList(ActiveChatState chatState) {
     final config = ref.read(llmConfigProvider);
-    final background = ref.watch(effectiveBackgroundProvider(chatState.character?.id));
+    final backgroundAsync = ref.watch(effectiveBackgroundProvider(chatState.character?.id));
+    final background = backgroundAsync.valueOrNull ?? ChatBackground.none;
     final hasBackground = background.type != BackgroundType.none;
     
     return ListView.builder(
@@ -1056,10 +1067,12 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     
     if (message.isEmpty) {
       // Empty message means "continue" - just generate without user message
+      _focusNode.unfocus(); // Hide keyboard
       ref.read(activeChatProvider.notifier).continueGeneration(config);
       _scrollToBottom();
     } else if (autoSend) {
       // Auto-send: send the message immediately
+      _focusNode.unfocus(); // Hide keyboard
       ref.read(activeChatProvider.notifier).sendMessage(message, config);
       _scrollToBottom();
     } else {
@@ -1156,19 +1169,21 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                   ),
                 ),
                 const SizedBox(width: 8),
-                IconButton.filled(
-                  onPressed: chatState.isGenerating ? null : _sendMessage,
-                  icon: chatState.isGenerating
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : const Icon(Icons.send),
-                ),
+                // Show stop button when generating, send button otherwise
+                if (chatState.isGenerating)
+                  IconButton.filled(
+                    onPressed: () => ref.read(activeChatProvider.notifier).cancelGeneration(),
+                    icon: const Icon(Icons.stop_circle),
+                    style: IconButton.styleFrom(
+                      backgroundColor: Colors.red,
+                    ),
+                    tooltip: '停止生成',
+                  )
+                else
+                  IconButton.filled(
+                    onPressed: _sendMessage,
+                    icon: const Icon(Icons.send),
+                  ),
               ],
             ),
           ],

@@ -166,12 +166,12 @@ class CharacterRepository {
   Future<void> loadBuiltInCharacters() async {
     try {
       final builtInCharacterFiles = [
-        'assets/characters/image_generation_assistant.json',
-        'assets/characters/xiaohongshu_copywriter.json',
-        'assets/characters/coding_assistant.json',
-        'assets/characters/cultivation_survival_game.json',
-        'assets/characters/marvel_crisis_manager.json',
-        'assets/characters/hyrule_adventure_quest.json',
+        'assets/characters/json/image_generation_assistant.json',
+        'assets/characters/json/xiaohongshu_copywriter.json',
+        'assets/characters/json/coding_assistant.json',
+        'assets/characters/json/cultivation_survival_game.json',
+        'assets/characters/json/marvel_crisis_manager.json',
+        'assets/characters/json/hyrule_adventure_quest.json',
       ];
 
       for (final assetPath in builtInCharacterFiles) {

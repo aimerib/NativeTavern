@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:native_tavern/data/models/character.dart';
 import 'package:native_tavern/data/repositories/character_repository.dart';
 import 'package:native_tavern/l10n/generated/app_localizations.dart';
+import 'package:native_tavern/presentation/providers/character_providers.dart';
 import 'package:native_tavern/presentation/providers/chat_providers.dart';
 import 'package:native_tavern/presentation/theme/app_theme.dart';
 
@@ -151,8 +152,8 @@ class _CharacterDetailContentState extends ConsumerState<_CharacterDetailContent
 
     if (confirmed == true && mounted) {
       try {
-        final repo = ref.read(characterRepositoryProvider);
-        await repo.deleteCharacter(character.id);
+        // Use characterListProvider.notifier to ensure list gets refreshed
+        await ref.read(characterListProvider.notifier).deleteCharacter(character.id);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text(l10n.characterDeleted)),

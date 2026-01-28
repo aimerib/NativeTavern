@@ -7,6 +7,7 @@ import 'package:path/path.dart' as p;
 import '../../../data/models/chat_background.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../../providers/background_providers.dart';
+import '../../providers/settings_providers.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/chat/chat_background_widget.dart';
 
@@ -70,6 +71,12 @@ class _BackgroundSettingsScreenState extends ConsumerState<BackgroundSettingsScr
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          // Character Avatar Background Setting (only for global settings)
+          if (!isCharacterSpecific) ...[
+            _buildCharacterAvatarSetting(),
+            const SizedBox(height: 24),
+          ],
+          
           // Preview
           _buildPreviewSection(),
           const SizedBox(height: 24),
@@ -109,6 +116,53 @@ class _BackgroundSettingsScreenState extends ConsumerState<BackgroundSettingsScr
       style: Theme.of(context).textTheme.titleMedium?.copyWith(
         color: AppTheme.accentColor,
         fontWeight: FontWeight.bold,
+      ),
+    );
+  }
+
+  Widget _buildCharacterAvatarSetting() {
+    final useCharacterAvatar = ref.watch(appSettingsProvider.select((s) => s.useCharacterAvatarAsBackground));
+    final l10n = AppLocalizations.of(context);
+    
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.account_circle, color: AppTheme.accentColor),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    '角色卡图片背景', // Character Avatar Background
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '启用后，如果角色卡有头像图片，将自动作为聊天背景（优先级低于角色专属背景和全局背景）',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: AppTheme.textMuted,
+              ),
+            ),
+            const SizedBox(height: 12),
+            SwitchListTile(
+              title: const Text('使用角色卡图片作为背景'),
+              subtitle: const Text('优先级：角色专属背景 > 全局背景 > 角色卡图片 > 默认颜色'),
+              value: useCharacterAvatar,
+              onChanged: (value) {
+                ref.read(appSettingsProvider.notifier).updateUseCharacterAvatarAsBackground(value);
+              },
+              contentPadding: EdgeInsets.zero,
+            ),
+          ],
+        ),
       ),
     );
   }

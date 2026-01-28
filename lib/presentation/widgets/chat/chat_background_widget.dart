@@ -18,18 +18,24 @@ class ChatBackgroundWidget extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final background = ref.watch(effectiveBackgroundProvider(characterId));
+    final backgroundAsync = ref.watch(effectiveBackgroundProvider(characterId));
 
-    if (background.type == BackgroundType.none) {
-      return child;
-    }
+    return backgroundAsync.when(
+      data: (background) {
+        if (background.type == BackgroundType.none) {
+          return child;
+        }
 
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        _BackgroundRenderer(background: background),
-        child,
-      ],
+        return Stack(
+          fit: StackFit.expand,
+          children: [
+            _BackgroundRenderer(background: background),
+            child,
+          ],
+        );
+      },
+      loading: () => child, // Show without background while loading
+      error: (_, __) => child, // Show without background on error
     );
   }
 }

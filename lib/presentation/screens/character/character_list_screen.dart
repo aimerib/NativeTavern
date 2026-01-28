@@ -8,6 +8,7 @@ import 'package:native_tavern/presentation/providers/character_providers.dart';
 import 'package:native_tavern/presentation/providers/chat_providers.dart';
 import 'package:native_tavern/presentation/router/app_router.dart';
 import 'package:native_tavern/presentation/theme/app_theme.dart';
+import 'character_view_mode.dart';
 
 /// Character list screen
 class CharacterListScreen extends ConsumerStatefulWidget {
@@ -19,7 +20,7 @@ class CharacterListScreen extends ConsumerStatefulWidget {
 
 class _CharacterListScreenState extends ConsumerState<CharacterListScreen> {
   String _searchQuery = '';
-  bool _isGridView = false;
+  CharacterViewMode _viewMode = CharacterViewMode.compactGrid;
 
   @override
   Widget build(BuildContext context) {
@@ -31,9 +32,9 @@ class _CharacterListScreenState extends ConsumerState<CharacterListScreen> {
         title: Text(l10n.characters),
         actions: [
           IconButton(
-            icon: Icon(_isGridView ? Icons.list : Icons.grid_view),
-            onPressed: () => setState(() => _isGridView = !_isGridView),
-            tooltip: _isGridView ? l10n.listView : l10n.gridView,
+            icon: _getViewModeIcon(),
+            onPressed: () => setState(() => _viewMode = _viewMode.next),
+            tooltip: _viewMode.getDisplayName(l10n),
           ),
           IconButton(
             icon: const Icon(Icons.add),
@@ -71,10 +72,13 @@ class _CharacterListScreenState extends ConsumerState<CharacterListScreen> {
                   return const _EmptyState();
                 }
 
-                if (_isGridView) {
-                  return _CharacterGridView(characters: filtered);
-                } else {
-                  return _CharacterListView(characters: filtered);
+                switch (_viewMode) {
+                  case CharacterViewMode.list:
+                    return _CharacterListView(characters: filtered);
+                  case CharacterViewMode.grid:
+                    return _CharacterGridView(characters: filtered);
+                  case CharacterViewMode.compactGrid:
+                    return _CharacterCompactGridView(characters: filtered);
                 }
               },
               loading: () => const Center(child: CircularProgressIndicator()),
@@ -98,6 +102,17 @@ class _CharacterListScreenState extends ConsumerState<CharacterListScreen> {
         ],
       ),
     );
+  }
+  
+  Icon _getViewModeIcon() {
+    switch (_viewMode) {
+      case CharacterViewMode.list:
+        return const Icon(Icons.list);
+      case CharacterViewMode.grid:
+        return const Icon(Icons.grid_view);
+      case CharacterViewMode.compactGrid:
+        return const Icon(Icons.view_compact);
+    }
   }
 }
 
@@ -164,6 +179,29 @@ class _CharacterListView extends StatelessWidget {
       itemCount: characters.length,
       itemBuilder: (context, index) {
         return _CharacterListTile(character: characters[index]);
+      },
+    );
+  }
+}
+
+class _CharacterCompactGridView extends StatelessWidget {
+  final List<Character> characters;
+
+  const _CharacterCompactGridView({required this.characters});
+
+  @override
+  Widget build(BuildContext context) {
+    return GridView.builder(
+      padding: const EdgeInsets.all(16),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 3,
+        childAspectRatio: 0.65,
+        crossAxisSpacing: 8,
+        mainAxisSpacing: 8,
+      ),
+      itemCount: characters.length,
+      itemBuilder: (context, index) {
+        return _CharacterCompactGridCard(character: characters[index]);
       },
     );
   }
@@ -333,6 +371,113 @@ class _CharacterGridCard extends ConsumerWidget {
         return const Color(0xFFE91E63); // Pink for image generation
       case 'builtin_xiaohongshu_copywriter':
         return const Color(0xFFFF5722); // Orange/Red for social media
+      default:
+        return AppTheme.darkDivider;
+    }
+  }
+}
+
+class _CharacterCompactGridCard extends ConsumerWidget {
+  final Character character;
+
+  const _CharacterCompactGridCard({required this.character});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () => context.push('/characters/${character.id}'),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Expanded(
+              flex: 4,
+              child: _buildAvatar(),
+            ),
+            Expanded(
+              flex: 1,
+              child: Padding(
+                padding: const EdgeInsets.all(4),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      character.name,
+                      style: Theme.of(context).textTheme.bodySmall,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAvatar() {
+    if (character.assets?.avatarPath != null) {
+      final file = File(character.assets!.avatarPath!);
+      return Image.file(
+        file,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => _defaultAvatar(),
+      );
+    }
+    return _defaultAvatar();
+  }
+
+  Widget _defaultAvatar() {
+    final icon = _getCharacterIcon(character);
+    final color = _getCharacterColor(character);
+    
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            color,
+            color.withValues(alpha: 0.7),
+          ],
+        ),
+      ),
+      child: Center(
+        child: Icon(
+          icon,
+          size: 40,
+          color: Colors.white,
+        ),
+      ),
+    );
+  }
+
+  IconData _getCharacterIcon(Character character) {
+    switch (character.id) {
+      case 'builtin_coding_assistant':
+        return Icons.code;
+      case 'builtin_image_gen_assistant':
+        return Icons.image;
+      case 'builtin_xiaohongshu_copywriter':
+        return Icons.edit_note;
+      default:
+        return Icons.person;
+    }
+  }
+
+  Color _getCharacterColor(Character character) {
+    switch (character.id) {
+      case 'builtin_coding_assistant':
+        return const Color(0xFF2196F3);
+      case 'builtin_image_gen_assistant':
+        return const Color(0xFFE91E63);
+      case 'builtin_xiaohongshu_copywriter':
+        return const Color(0xFFFF5722);
       default:
         return AppTheme.darkDivider;
     }
