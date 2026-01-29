@@ -29,7 +29,7 @@ class InitializationService {
   static bool _initialized = false;
   static InitializationData? _initData;
   static const String _defaultCharacterCreatedKey = 'default_character_created';
-  static const String _builtInCharactersLoadedKey = 'builtin_characters_loaded';
+  static const String _builtInCharactersLoadedKey = 'builtin_characters_v22_loaded';
   static const String _builtInWorldInfosLoadedKey = 'builtin_worldinfos_loaded';
   
   /// Initialize all core services

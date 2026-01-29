@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:drift/drift.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
@@ -179,24 +180,38 @@ class CharacterRepository {
     return count.length;
   }
 
-  /// Load built-in characters from assets
+  /// Load built-in characters from PNG assets (with embedded character data)
   Future<void> loadBuiltInCharacters() async {
     try {
       final builtInCharacterFiles = [
-        'assets/characters/json/image_generation_assistant.json',
-        'assets/characters/json/xiaohongshu_copywriter.json',
-        'assets/characters/json/coding_assistant.json',
-        'assets/characters/json/cultivation_survival_game.json',
-        'assets/characters/json/marvel_crisis_manager.json',
-        'assets/characters/json/hyrule_adventure_quest.json',
+        'assets/characters/images/image_generation_assistant.png',
+        'assets/characters/images/xiaohongshu_copywriter.png',
+        'assets/characters/images/coding_assistant.png',
+        'assets/characters/images/cultivation_survival_game.png',
+        'assets/characters/images/marvel_crisis_manager.png',
+        'assets/characters/images/hyrule_adventure_quest.png',
       ];
 
       for (final assetPath in builtInCharacterFiles) {
         try {
-          // Check if character already exists
-          final jsonString = await rootBundle.loadString(assetPath);
+          // Load PNG bytes from assets
+          final byteData = await rootBundle.load(assetPath);
+          final bytes = byteData.buffer.asUint8List();
+          
+          // Extract character data from PNG tEXt chunk
+          final base64Data = _extractPngTextChunk(bytes, 'chara');
+          if (base64Data == null) {
+            debugPrint('No character data found in $assetPath');
+            continue;
+          }
+          
+          // Decode base64 and parse JSON (V2/V3 character card format)
+          final jsonString = utf8.decode(base64Decode(base64Data));
           final json = jsonDecode(jsonString) as Map<String, dynamic>;
-          final characterId = json['id'] as String;
+          
+          // Extract character ID from embedded data (V2/V3 format has it in data.id)
+          final data = json['data'] as Map<String, dynamic>? ?? json;
+          final characterId = data['id'] as String? ?? _uuid.v4();
           
           final existing = await getCharacter(characterId);
           if (existing != null) {
@@ -204,9 +219,16 @@ class CharacterRepository {
             continue;
           }
 
-          // Create character from JSON
-          final character = models.Character.fromJson(json);
-          await createCharacter(character);
+          // Parse character card (V2/V3 format) - same logic as importFromJson
+          final character = _parseCharacterCard(json, characterId);
+          
+          // Save avatar image
+          final avatarPath = await _saveBuiltInAvatar(characterId, bytes);
+          final characterWithAvatar = character.copyWith(
+            assets: models.CharacterAssets(avatarPath: avatarPath),
+          );
+          
+          await createCharacter(characterWithAvatar);
           
           debugPrint('Loaded built-in character: ${character.name}');
         } catch (e) {
@@ -217,10 +239,9 @@ class CharacterRepository {
       debugPrint('Failed to load built-in characters: $e');
     }
   }
-
-  /// Import character from JSON data
-  Future<models.Character> importFromJson(Map<String, dynamic> json) async {
-    // Parse character card (V2 or V3 format)
+  
+  /// Parse character card from V1/V2/V3 format JSON
+  models.Character _parseCharacterCard(Map<String, dynamic> json, String characterId) {
     String name = '';
     String description = '';
     String personality = '';
@@ -233,7 +254,9 @@ class CharacterRepository {
     List<String> tags = [];
     String creator = '';
     String version = '';
+    List<String> alternateGreetings = [];
     Map<String, dynamic> extensions = {};
+    models.CharacterBook? characterBook;
 
     // Check for V3 format
     if (json.containsKey('spec') && json.containsKey('data')) {
@@ -250,7 +273,11 @@ class CharacterRepository {
       tags = (data['tags'] as List<dynamic>?)?.cast<String>() ?? [];
       creator = data['creator'] as String? ?? '';
       version = data['character_version'] as String? ?? '';
+      alternateGreetings = (data['alternate_greetings'] as List<dynamic>?)?.cast<String>() ?? [];
       extensions = data['extensions'] as Map<String, dynamic>? ?? {};
+      if (data['character_book'] != null) {
+        characterBook = models.CharacterBook.fromJson(data['character_book'] as Map<String, dynamic>);
+      }
     } 
     // Check for V2 format (has data field but no spec)
     else if (json.containsKey('data')) {
@@ -267,7 +294,11 @@ class CharacterRepository {
       tags = (data['tags'] as List<dynamic>?)?.cast<String>() ?? [];
       creator = data['creator'] as String? ?? '';
       version = data['character_version'] as String? ?? '';
+      alternateGreetings = (data['alternate_greetings'] as List<dynamic>?)?.cast<String>() ?? [];
       extensions = data['extensions'] as Map<String, dynamic>? ?? {};
+      if (data['character_book'] != null) {
+        characterBook = models.CharacterBook.fromJson(data['character_book'] as Map<String, dynamic>);
+      }
     }
     // V1 format (flat structure)
     else {
@@ -279,13 +310,14 @@ class CharacterRepository {
       exampleMessages = json['mes_example'] as String? ?? json['example_dialogue'] as String? ?? '';
     }
     
-    final character = models.Character(
-      id: _uuid.v4(),
+    return models.Character(
+      id: characterId,
       name: name,
       description: description,
       personality: personality,
       scenario: scenario,
       firstMessage: firstMessage,
+      alternateGreetings: alternateGreetings,
       exampleMessages: exampleMessages,
       systemPrompt: systemPrompt,
       postHistoryInstructions: postHistoryInstructions,
@@ -293,11 +325,73 @@ class CharacterRepository {
       tags: tags,
       creator: creator,
       version: version,
+      characterBook: characterBook,
       extensions: extensions,
       createdAt: DateTime.now(),
       modifiedAt: DateTime.now(),
     );
+  }
+  
+  /// Extract text chunk from PNG bytes
+  String? _extractPngTextChunk(Uint8List bytes, String keyword) {
+    // PNG signature is 8 bytes
+    if (bytes.length < 8) return null;
     
+    int offset = 8; // Skip PNG signature
+    
+    while (offset < bytes.length - 8) {
+      // Read chunk length (4 bytes, big-endian)
+      final length = (bytes[offset] << 24) | 
+                    (bytes[offset + 1] << 16) | 
+                    (bytes[offset + 2] << 8) | 
+                    bytes[offset + 3];
+      offset += 4;
+      
+      // Read chunk type (4 bytes)
+      final type = String.fromCharCodes(bytes.sublist(offset, offset + 4));
+      offset += 4;
+      
+      if (type == 'tEXt') {
+        // Read keyword until null byte
+        final dataStart = offset;
+        final dataEnd = offset + length;
+        
+        int keywordEnd = dataStart;
+        while (keywordEnd < dataEnd && bytes[keywordEnd] != 0) {
+          keywordEnd++;
+        }
+        
+        final chunkKeyword = String.fromCharCodes(bytes.sublist(dataStart, keywordEnd));
+        
+        if (chunkKeyword == keyword && keywordEnd + 1 < dataEnd) {
+          // Return the text value after the null separator
+          return String.fromCharCodes(bytes.sublist(keywordEnd + 1, dataEnd));
+        }
+      }
+      
+      // Skip data + CRC
+      offset += length + 4;
+    }
+    
+    return null;
+  }
+  
+  /// Save built-in avatar to data directory
+  Future<String> _saveBuiltInAvatar(String characterId, Uint8List imageData) async {
+    final avatarDir = Directory(p.join(_dataPath, 'avatars'));
+    if (!await avatarDir.exists()) {
+      await avatarDir.create(recursive: true);
+    }
+    
+    final avatarPath = p.join(avatarDir.path, '$characterId.png');
+    await File(avatarPath).writeAsBytes(imageData);
+    
+    return avatarPath;
+  }
+
+  /// Import character from JSON data
+  Future<models.Character> importFromJson(Map<String, dynamic> json) async {
+    final character = _parseCharacterCard(json, _uuid.v4());
     return createCharacter(character);
   }
 
