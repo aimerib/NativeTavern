@@ -118,36 +118,60 @@ class CharacterBackgroundNotifier extends StateNotifier<ChatBackground?> {
 final effectiveBackgroundProvider = FutureProvider.family<ChatBackground, String?>((ref, characterId) async {
   // Check if we should use character avatar as background
   final useCharacterAvatar = ref.watch(appSettingsProvider.select((s) => s.useCharacterAvatarAsBackground));
+  // Get global image background settings - applies to all image backgrounds
+  final enableBlur = ref.watch(appSettingsProvider.select((s) => s.enableBackgroundBlur));
+  final backgroundOpacity = ref.watch(appSettingsProvider.select((s) => s.backgroundOpacity));
+  // Get global background (for fallback and bubbleOpacity)
+  final globalBg = ref.watch(globalBackgroundProvider);
+  
+  ChatBackground effectiveBg;
   
   if (characterId != null) {
     // 1. Check for character-specific background
     final characterBg = ref.watch(characterBackgroundProvider(characterId));
     if (characterBg != null && characterBg.type != BackgroundType.none) {
-      return characterBg;
-    }
-    
-    // 2. Check for character avatar if enabled
-    if (useCharacterAvatar) {
+      effectiveBg = characterBg;
+    } else if (useCharacterAvatar) {
+      // 2. Check for character avatar if enabled
       try {
         final repo = ref.watch(characterRepositoryProvider);
         final character = await repo.getCharacter(characterId);
         if (character?.assets?.avatarPath != null) {
-          return ChatBackground.imagePath(
+          // Use global settings for all image parameters
+          effectiveBg = ChatBackground.imagePath(
             character!.assets!.avatarPath!,
-            opacity: 0.3,
-            blur: true,
+            opacity: backgroundOpacity,
+            blur: enableBlur,
             blurAmount: 10.0,
-            bubbleOpacity: 0.9,
+            bubbleOpacity: globalBg.bubbleOpacity,
           );
+        } else {
+          // 3. Fall back to global background
+          effectiveBg = globalBg;
         }
       } catch (e) {
         // If character not found or error, fall through to global background
+        effectiveBg = globalBg;
       }
+    } else {
+      // 3. Fall back to global background
+      effectiveBg = globalBg;
     }
+  } else {
+    // No character ID, use global background
+    effectiveBg = globalBg;
   }
   
-  // 3. Fall back to global background
-  return ref.watch(globalBackgroundProvider);
+  // Apply global settings to all image backgrounds
+  if (effectiveBg.type == BackgroundType.image) {
+    return effectiveBg.copyWith(
+      opacity: backgroundOpacity,
+      blur: enableBlur,
+      blurAmount: 10.0,
+    );
+  }
+  
+  return effectiveBg;
 });
 
 /// Provider for all saved character backgrounds

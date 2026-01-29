@@ -8,6 +8,7 @@ import 'package:native_tavern/l10n/generated/app_localizations.dart';
 import 'package:native_tavern/presentation/providers/chat_providers.dart';
 import 'package:native_tavern/presentation/router/app_router.dart';
 import 'package:native_tavern/presentation/theme/app_theme.dart';
+import 'package:native_tavern/presentation/widgets/common/character_avatar_image.dart';
 
 /// Home screen showing recent chats
 class HomeScreen extends ConsumerStatefulWidget {
@@ -177,9 +178,15 @@ class _ChatListTile extends ConsumerWidget {
           data: (character) {
             final avatarPath = character?.assets?.avatarPath;
             if (avatarPath != null && avatarPath.isNotEmpty) {
-              return CircleAvatar(
-                backgroundImage: AssetImage(avatarPath),
-                onBackgroundImageError: (_, __) {},
+              return CharacterAvatarCircle(
+                imagePath: avatarPath,
+                errorBuilder: (_, __, ___) => CircleAvatar(
+                  backgroundColor: AppTheme.accentColor.withValues(alpha: 0.2),
+                  child: Text(
+                    character?.name.isNotEmpty == true ? character!.name[0].toUpperCase() : '?',
+                    style: const TextStyle(color: AppTheme.accentColor),
+                  ),
+                ),
               );
             }
             return CircleAvatar(

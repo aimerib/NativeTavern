@@ -32,7 +32,10 @@ import 'package:native_tavern/presentation/widgets/chat/context_usage_indicator.
 import 'package:native_tavern/presentation/providers/context_usage_providers.dart';
 import 'package:native_tavern/presentation/providers/image_gen_providers.dart';
 import 'package:native_tavern/presentation/widgets/chat/image_generation_dialog.dart';
+import 'package:native_tavern/presentation/widgets/common/character_avatar_image.dart';
 import 'package:native_tavern/domain/services/image_generation_service.dart';
+import 'package:native_tavern/presentation/screens/chat/chat_layout_mode.dart';
+import 'package:native_tavern/presentation/widgets/chat/visual_novel_message_view.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 import 'package:uuid/uuid.dart';
@@ -581,7 +584,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                 ? const Center(child: CircularProgressIndicator())
                 : chatState.messages.isEmpty
                     ? _buildEmptyState()
-                    : _buildMessageList(chatState),
+                    : _buildMessagesArea(chatState),
           ),
 
           // Slash command suggestions
@@ -704,6 +707,21 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           tooltip: l10n.bookmarks,
           onPressed: () => _showBookmarksDialog(context),
         ),
+        // Layout mode toggle (only show when there's a background)
+        if (ref.watch(effectiveBackgroundProvider(chatState.character?.id)).valueOrNull?.type == BackgroundType.image)
+          IconButton(
+            icon: Icon(
+              ref.watch(appSettingsProvider.select((s) => s.chatLayoutMode)) == 'bubble'
+                  ? Icons.auto_stories  // Novel mode icon
+                  : Icons.chat_bubble,  // Bubble mode icon
+            ),
+            tooltip: '切换布局',
+            onPressed: () {
+              final currentMode = ref.read(appSettingsProvider).chatLayoutMode;
+              final newMode = currentMode == 'bubble' ? 'visualNovel' : 'bubble';
+              ref.read(appSettingsProvider.notifier).updateChatLayoutMode(newMode);
+            },
+          ),
         if (chatState.messages.isNotEmpty &&
             chatState.messages.last.role == MessageRole.assistant &&
             !chatState.isGenerating)
@@ -811,9 +829,13 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           if (character?.assets?.avatarPath != null)
-            CircleAvatar(
+            CharacterAvatarCircle(
+              imagePath: character!.assets!.avatarPath!,
               radius: 50,
-              backgroundImage: FileImage(File(character!.assets!.avatarPath!)),
+              errorBuilder: (_, __, ___) => const CircleAvatar(
+                radius: 50,
+                child: Icon(Icons.person, size: 50),
+              ),
             )
           else
             const CircleAvatar(
@@ -837,6 +859,97 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     );
   }
 
+  Widget _buildMessagesArea(ActiveChatState chatState) {
+    final layoutMode = ref.watch(appSettingsProvider.select((s) => s.chatLayoutMode));
+    final backgroundAsync = ref.watch(effectiveBackgroundProvider(chatState.character?.id));
+    final background = backgroundAsync.valueOrNull ?? ChatBackground.none;
+    final hasBackground = background.type == BackgroundType.image;
+    
+    // Only use visual novel mode when there's an image background
+    if (layoutMode == 'visualNovel' && hasBackground) {
+      return _buildVisualNovelView(chatState);
+    }
+    
+    return _buildMessageList(chatState);
+  }
+
+  Widget _buildVisualNovelView(ActiveChatState chatState) {
+    return Column(
+      children: [
+        // Upper area - shows the background (empty space)
+        const Expanded(child: SizedBox.shrink()),
+        // Bottom area - message overlay
+        VisualNovelMessageView(
+          messages: chatState.messages,
+          character: chatState.character,
+          isGenerating: chatState.isGenerating,
+          onLongPress: (message) => _showMessageOptionsForVisualNovel(context, message, chatState),
+          onSwipe: (swipeIndex, messageId) {
+            ref.read(activeChatProvider.notifier).swipeMessage(messageId, swipeIndex);
+          },
+        ),
+      ],
+    );
+  }
+
+  void _showMessageOptionsForVisualNovel(BuildContext context, ChatMessage message, ActiveChatState chatState) {
+    final l10n = AppLocalizations.of(context);
+    final config = ref.read(llmConfigProvider);
+    final isAssistant = message.role == MessageRole.assistant;
+    
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppTheme.darkCard,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.copy),
+              title: Text(l10n.copy),
+              onTap: () {
+                Navigator.pop(context);
+                // Copy to clipboard
+                final content = message.content;
+                if (content.isNotEmpty) {
+                  // Implement copy
+                }
+              },
+            ),
+            if (isAssistant)
+              ListTile(
+                leading: const Icon(Icons.refresh),
+                title: Text(l10n.regenerate),
+                onTap: () {
+                  Navigator.pop(context);
+                  ref.read(activeChatProvider.notifier).regenerateMessage(message.id, config);
+                },
+              ),
+            ListTile(
+              leading: const Icon(Icons.play_arrow),
+              title: Text(l10n.continueFromHere),
+              onTap: () {
+                Navigator.pop(context);
+                ref.read(activeChatProvider.notifier).continueFromMessage(message.id, config);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.delete, color: Colors.red),
+              title: Text(l10n.delete, style: const TextStyle(color: Colors.red)),
+              onTap: () {
+                Navigator.pop(context);
+                _showDeleteConfirmation(message.id);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildMessageList(ActiveChatState chatState) {
     final config = ref.read(llmConfigProvider);
     final backgroundAsync = ref.watch(effectiveBackgroundProvider(chatState.character?.id));
@@ -855,6 +968,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         final message = chatState.messages[actualIndex];
         final isLast = actualIndex == chatState.messages.length - 1;
         
+        final layoutMode = ref.watch(appSettingsProvider.select((s) => s.chatLayoutMode));
+        
         return _MessageBubble(
           key: ValueKey(message.id),
           message: message,
@@ -865,6 +980,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           isLast: isLast,
           hasBackground: hasBackground,
           bubbleOpacity: background.bubbleOpacity,
+          layoutMode: layoutMode,
           onSwipe: (swipeIndex) {
             ref.read(activeChatProvider.notifier).swipeMessage(
                   message.id,
@@ -1739,6 +1855,7 @@ class _MessageBubble extends StatefulWidget {
   final bool isLast;
   final bool hasBackground;
   final double bubbleOpacity;
+  final String layoutMode;
   final void Function(int) onSwipe;
   final void Function(String) onEdit;
   final VoidCallback onDelete;
@@ -1758,6 +1875,7 @@ class _MessageBubble extends StatefulWidget {
     required this.isLast,
     this.hasBackground = false,
     this.bubbleOpacity = 0.8,
+    this.layoutMode = 'bubble',
     required this.onSwipe,
     required this.onEdit,
     required this.onDelete,
@@ -1816,12 +1934,7 @@ class _MessageBubbleState extends State<_MessageBubble> {
                       horizontal: 16,
                       vertical: 12,
                     ),
-                    decoration: BoxDecoration(
-                      color: isUser
-                          ? (widget.hasBackground ? AppTheme.accentColor.withValues(alpha: widget.bubbleOpacity) : AppTheme.accentColor)
-                          : (widget.hasBackground ? AppTheme.darkCard.withValues(alpha: widget.bubbleOpacity) : AppTheme.darkCard),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
+                    decoration: _buildMessageDecoration(isUser),
                     child: _isEditing
                         ? _buildEditField()
                         : Column(
@@ -1898,11 +2011,51 @@ class _MessageBubbleState extends State<_MessageBubble> {
     );
   }
 
+  BoxDecoration _buildMessageDecoration(bool isUser) {
+    final isTransparent = widget.layoutMode == 'transparent';
+    
+    if (isTransparent && widget.hasBackground) {
+      // Transparent mode: very light background with blur effect
+      return BoxDecoration(
+        color: isUser
+            ? AppTheme.accentColor.withValues(alpha: 0.35)
+            : Colors.black.withValues(alpha: 0.35),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isUser
+              ? AppTheme.accentColor.withValues(alpha: 0.5)
+              : Colors.white.withValues(alpha: 0.3),
+          width: 1,
+        ),
+        // Glass morphism effect
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      );
+    } else {
+      // Classic bubble mode
+      return BoxDecoration(
+        color: isUser
+            ? (widget.hasBackground ? AppTheme.accentColor.withValues(alpha: widget.bubbleOpacity) : AppTheme.accentColor)
+            : (widget.hasBackground ? AppTheme.darkCard.withValues(alpha: widget.bubbleOpacity) : AppTheme.darkCard),
+        borderRadius: BorderRadius.circular(16),
+      );
+    }
+  }
+
   Widget _buildAvatar() {
     if (widget.character?.assets?.avatarPath != null) {
-      return CircleAvatar(
+      return CharacterAvatarCircle(
+        imagePath: widget.character!.assets!.avatarPath!,
         radius: 16,
-        backgroundImage: FileImage(File(widget.character!.assets!.avatarPath!)),
+        errorBuilder: (_, __, ___) => const CircleAvatar(
+          radius: 16,
+          child: Icon(Icons.person, size: 16),
+        ),
       );
     }
     return const CircleAvatar(

@@ -401,6 +401,9 @@ class AppSettings {
   final bool autoSaveChats;
   final bool enableDebugLog;
   final bool useCharacterAvatarAsBackground;
+  final bool enableBackgroundBlur;
+  final double backgroundOpacity;
+  final String chatLayoutMode;
 
   const AppSettings({
     this.theme = 'dark',
@@ -412,6 +415,9 @@ class AppSettings {
     this.autoSaveChats = true,
     this.enableDebugLog = false,
     this.useCharacterAvatarAsBackground = true,
+    this.enableBackgroundBlur = false,
+    this.backgroundOpacity = 1.0,
+    this.chatLayoutMode = 'bubble',
   });
 
   AppSettings copyWith({
@@ -424,6 +430,9 @@ class AppSettings {
     bool? autoSaveChats,
     bool? enableDebugLog,
     bool? useCharacterAvatarAsBackground,
+    bool? enableBackgroundBlur,
+    double? backgroundOpacity,
+    String? chatLayoutMode,
   }) {
     return AppSettings(
       theme: theme ?? this.theme,
@@ -436,6 +445,9 @@ class AppSettings {
       autoSaveChats: autoSaveChats ?? this.autoSaveChats,
       enableDebugLog: enableDebugLog ?? this.enableDebugLog,
       useCharacterAvatarAsBackground: useCharacterAvatarAsBackground ?? this.useCharacterAvatarAsBackground,
+      enableBackgroundBlur: enableBackgroundBlur ?? this.enableBackgroundBlur,
+      backgroundOpacity: backgroundOpacity ?? this.backgroundOpacity,
+      chatLayoutMode: chatLayoutMode ?? this.chatLayoutMode,
     );
   }
 
@@ -449,6 +461,9 @@ class AppSettings {
         'autoSaveChats': autoSaveChats,
         'enableDebugLog': enableDebugLog,
         'useCharacterAvatarAsBackground': useCharacterAvatarAsBackground,
+        'enableBackgroundBlur': enableBackgroundBlur,
+        'backgroundOpacity': backgroundOpacity,
+        'chatLayoutMode': chatLayoutMode,
       };
 
   factory AppSettings.fromJson(Map<String, dynamic> json) {
@@ -463,6 +478,9 @@ class AppSettings {
       autoSaveChats: json['autoSaveChats'] as bool? ?? true,
       enableDebugLog: json['enableDebugLog'] as bool? ?? false,
       useCharacterAvatarAsBackground: json['useCharacterAvatarAsBackground'] as bool? ?? true,
+      enableBackgroundBlur: json['enableBackgroundBlur'] as bool? ?? false,
+      backgroundOpacity: (json['backgroundOpacity'] as num?)?.toDouble() ?? 1.0,
+      chatLayoutMode: json['chatLayoutMode'] as String? ?? 'bubble',
     );
   }
 }
@@ -568,6 +586,21 @@ class AppSettingsNotifier extends StateNotifier<AppSettings> {
 
   void updateUseCharacterAvatarAsBackground(bool enabled) {
     state = state.copyWith(useCharacterAvatarAsBackground: enabled);
+    _saveSettings();
+  }
+
+  void updateEnableBackgroundBlur(bool enabled) {
+    state = state.copyWith(enableBackgroundBlur: enabled);
+    _saveSettings();
+  }
+
+  void updateBackgroundOpacity(double opacity) {
+    state = state.copyWith(backgroundOpacity: opacity.clamp(0.1, 1.0));
+    _saveSettings();
+  }
+
+  void updateChatLayoutMode(String mode) {
+    state = state.copyWith(chatLayoutMode: mode);
     _saveSettings();
   }
 

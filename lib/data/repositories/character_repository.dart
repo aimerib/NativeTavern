@@ -128,8 +128,25 @@ class CharacterRepository {
 
   /// Delete a character
   Future<void> deleteCharacter(String id) async {
-    // Delete associated chats first
+    // Delete associated messages first (they reference chats)
+    final chats = await (_db.select(_db.chats)..where((t) => t.characterId.equals(id))).get();
+    for (final chat in chats) {
+      await (_db.delete(_db.messages)..where((t) => t.chatId.equals(chat.id))).go();
+      await (_db.delete(_db.bookmarks)..where((t) => t.chatId.equals(chat.id))).go();
+    }
+    
+    // Delete associated chats
     await (_db.delete(_db.chats)..where((t) => t.characterId.equals(id))).go();
+    
+    // Delete associated world infos and their entries (character-specific lorebooks)
+    final worldInfos = await (_db.select(_db.worldInfos)..where((t) => t.characterId.equals(id))).get();
+    for (final worldInfo in worldInfos) {
+      await (_db.delete(_db.worldInfoEntries)..where((t) => t.worldInfoId.equals(worldInfo.id))).go();
+    }
+    await (_db.delete(_db.worldInfos)..where((t) => t.characterId.equals(id))).go();
+    
+    // Delete associated character tags
+    await (_db.delete(_db.characterTags)..where((t) => t.characterId.equals(id))).go();
     
     // Delete the character
     await (_db.delete(_db.characters)..where((t) => t.id.equals(id))).go();

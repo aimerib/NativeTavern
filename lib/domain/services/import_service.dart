@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'package:archive/archive.dart';
 import 'package:native_tavern/data/models/character.dart';
+import 'package:native_tavern/core/utils/path_utils.dart';
 import 'package:path/path.dart' as p;
 
 /// Service for importing and exporting character cards
@@ -161,7 +162,7 @@ class ImportService {
     Map<String, dynamic> extensions = {};
     CharacterBook? characterBook;
 
-    // Check for V3 format
+    // Check for V3 format (also matches V2 with spec field)
     if (json.containsKey('spec') && json.containsKey('data')) {
       final data = json['data'] as Map<String, dynamic>? ?? {};
       name = data['name'] as String? ?? '';
@@ -181,7 +182,11 @@ class ImportService {
       
       // Parse character book (embedded lorebook)
       if (data['character_book'] != null) {
+        print('[ImportService] Found character_book in data, parsing...');
         characterBook = _parseCharacterBook(data['character_book'] as Map<String, dynamic>);
+        print('[ImportService] Parsed character_book with ${characterBook?.entries.length ?? 0} entries');
+      } else {
+        print('[ImportService] No character_book found in data. Data keys: ${data.keys.toList()}');
       }
     }
     // Check for V2 format
@@ -369,7 +374,9 @@ class ImportService {
     
     final avatarPath = p.join(avatarDir.path, '$characterId.png');
     await File(avatarPath).writeAsBytes(imageData);
-    return avatarPath;
+    
+    // Return relative path for storage (mobile-compatible)
+    return await PathUtils.toRelativePath(avatarPath);
   }
 
   String _generateId() {

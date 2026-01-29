@@ -8,6 +8,7 @@ import 'package:native_tavern/data/repositories/character_repository.dart';
 import 'package:native_tavern/presentation/providers/group_providers.dart';
 import 'package:native_tavern/presentation/providers/character_providers.dart';
 import 'package:native_tavern/presentation/theme/app_theme.dart';
+import 'package:native_tavern/presentation/widgets/common/character_avatar_image.dart';
 import 'package:native_tavern/l10n/generated/app_localizations.dart';
 
 /// Groups list screen
@@ -234,19 +235,27 @@ class _GroupCard extends ConsumerWidget {
                   message: character?.name ?? 'Unknown',
                   child: Stack(
                     children: [
-                      CircleAvatar(
-                        radius: 20,
-                        backgroundColor: AppTheme.darkDivider,
-                        backgroundImage: character?.assets?.avatarPath != null
-                            ? FileImage(File(character!.assets!.avatarPath!))
-                            : null,
-                        child: character?.assets?.avatarPath == null
-                            ? Text(
+                      character?.assets?.avatarPath != null
+                          ? CharacterAvatarCircle(
+                              imagePath: character!.assets!.avatarPath!,
+                              radius: 20,
+                              errorBuilder: (_, __, ___) => CircleAvatar(
+                                radius: 20,
+                                backgroundColor: AppTheme.darkDivider,
+                                child: Text(
+                                  character.name.substring(0, 1).toUpperCase(),
+                                  style: const TextStyle(fontSize: 16),
+                                ),
+                              ),
+                            )
+                          : CircleAvatar(
+                              radius: 20,
+                              backgroundColor: AppTheme.darkDivider,
+                              child: Text(
                                 character?.name.substring(0, 1).toUpperCase() ?? '?',
                                 style: const TextStyle(fontSize: 16),
-                              )
-                            : null,
-                      ),
+                              ),
+                            ),
                       if (member.isMuted)
                         Positioned(
                           bottom: 0,
@@ -392,14 +401,16 @@ class _CreateGroupDialogState extends ConsumerState<_CreateGroupDialog> {
                           });
                         },
                         title: Text(character.name),
-                        secondary: CircleAvatar(
-                          backgroundImage: character.assets?.avatarPath != null
-                              ? FileImage(File(character.assets!.avatarPath!))
-                              : null,
-                          child: character.assets?.avatarPath == null
-                              ? Text(character.name.substring(0, 1).toUpperCase())
-                              : null,
-                        ),
+                        secondary: character.assets?.avatarPath != null
+                            ? CharacterAvatarCircle(
+                                imagePath: character.assets!.avatarPath!,
+                                errorBuilder: (_, __, ___) => CircleAvatar(
+                                  child: Text(character.name.substring(0, 1).toUpperCase()),
+                                ),
+                              )
+                            : CircleAvatar(
+                                child: Text(character.name.substring(0, 1).toUpperCase()),
+                              ),
                       );
                     },
                   );

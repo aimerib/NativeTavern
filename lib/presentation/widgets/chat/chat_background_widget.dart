@@ -3,7 +3,9 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../data/models/chat_background.dart';
+import '../../../core/utils/path_utils.dart';
 import '../../providers/background_providers.dart';
+import '../common/character_avatar_image.dart';
 
 /// Widget that renders a chat background
 class ChatBackgroundWidget extends ConsumerWidget {
@@ -159,10 +161,9 @@ class _BackgroundRenderer extends StatelessWidget {
 
   Widget _buildImageBackground() {
     if (background.imagePath != null && background.imagePath!.isNotEmpty) {
-      final file = File(background.imagePath!);
-      return Image.file(
-        file,
-        fit: BoxFit.cover,
+      // Use CharacterBackgroundImage for automatic path resolution
+      return CharacterBackgroundImage(
+        imagePath: background.imagePath!,
         errorBuilder: (context, error, stackTrace) {
           return Container(color: Colors.black);
         },
@@ -260,10 +261,18 @@ class BackgroundPreview extends StatelessWidget {
 
       case BackgroundType.image:
         if (background.imagePath != null) {
-          return Image.file(
-            File(background.imagePath!),
-            fit: BoxFit.cover,
-            errorBuilder: (_, __, ___) => Container(color: Colors.grey[800]),
+          return FutureBuilder<String>(
+            future: PathUtils.toAbsolutePath(background.imagePath!),
+            builder: (context, snapshot) {
+              if (snapshot.hasData) {
+                return Image.file(
+                  File(snapshot.data!),
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Container(color: Colors.grey[800]),
+                );
+              }
+              return Container(color: Colors.grey[800]);
+            },
           );
         }
         if (background.imageUrl != null) {

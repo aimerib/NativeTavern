@@ -8,6 +8,7 @@ import 'package:native_tavern/presentation/providers/character_providers.dart';
 import 'package:native_tavern/presentation/providers/chat_providers.dart';
 import 'package:native_tavern/presentation/router/app_router.dart';
 import 'package:native_tavern/presentation/theme/app_theme.dart';
+import 'package:native_tavern/presentation/widgets/common/character_avatar_image.dart';
 import 'character_view_mode.dart';
 
 /// Character list screen
@@ -313,9 +314,8 @@ class _CharacterGridCard extends ConsumerWidget {
 
   Widget _buildAvatar() {
     if (character.assets?.avatarPath != null) {
-      final file = File(character.assets!.avatarPath!);
-      return Image.file(
-        file,
+      return CharacterAvatarImage(
+        imagePath: character.assets!.avatarPath!,
         fit: BoxFit.cover,
         errorBuilder: (_, __, ___) => _defaultAvatar(),
       );
@@ -393,7 +393,7 @@ class _CharacterCompactGridCard extends ConsumerWidget {
           children: [
             Expanded(
               flex: 4,
-              child: _buildAvatar(),
+              child: _buildCompactAvatar(),
             ),
             Expanded(
               flex: 1,
@@ -420,19 +420,18 @@ class _CharacterCompactGridCard extends ConsumerWidget {
     );
   }
 
-  Widget _buildAvatar() {
+  Widget _buildCompactAvatar() {
     if (character.assets?.avatarPath != null) {
-      final file = File(character.assets!.avatarPath!);
-      return Image.file(
-        file,
+      return CharacterAvatarImage(
+        imagePath: character.assets!.avatarPath!,
         fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => _defaultAvatar(),
+        errorBuilder: (_, __, ___) => _defaultCompactAvatar(),
       );
     }
-    return _defaultAvatar();
+    return _defaultCompactAvatar();
   }
 
-  Widget _defaultAvatar() {
+  Widget _defaultCompactAvatar() {
     final icon = _getCharacterIcon(character);
     final color = _getCharacterColor(character);
     
@@ -604,9 +603,9 @@ class _CharacterListTile extends ConsumerWidget {
 
   Widget _buildListAvatar() {
     if (character.assets?.avatarPath != null) {
-      return CircleAvatar(
+      return CharacterAvatarCircle(
+        imagePath: character.assets!.avatarPath!,
         radius: 28,
-        backgroundImage: FileImage(File(character.assets!.avatarPath!)),
       );
     }
 

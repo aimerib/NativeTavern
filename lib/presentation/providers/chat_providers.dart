@@ -663,6 +663,11 @@ class ActiveChatNotifier extends StateNotifier<ActiveChatState> {
         final contentBuffer = StringBuffer();
         final reasoningBuffer = StringBuffer();
         await for (final chunk in _llmService.generateStreamWithReasoning(context, config)) {
+          // Check if generation was cancelled
+          if (_isCancelling) {
+            break;
+          }
+          
           if (chunk.isReasoningChunk && chunk.reasoning != null) {
             reasoningBuffer.write(chunk.reasoning);
           }
@@ -835,6 +840,11 @@ class ActiveChatNotifier extends StateNotifier<ActiveChatState> {
         final contentBuffer = StringBuffer();
         final reasoningBuffer = StringBuffer();
         await for (final chunk in _llmService.generateStreamWithReasoning(context, config)) {
+          // Check if generation was cancelled
+          if (_isCancelling) {
+            break;
+          }
+          
           if (chunk.isReasoningChunk && chunk.reasoning != null) {
             reasoningBuffer.write(chunk.reasoning);
           }
@@ -2107,6 +2117,11 @@ class ActiveChatNotifier extends StateNotifier<ActiveChatState> {
         final contentBuffer = StringBuffer();
         final reasoningBuffer = StringBuffer();
         await for (final chunk in _llmService.generateStreamWithReasoning(context, config)) {
+          // Check if generation was cancelled
+          if (_isCancelling) {
+            break;
+          }
+          
           if (chunk.isReasoningChunk && chunk.reasoning != null) {
             reasoningBuffer.write(chunk.reasoning);
           }

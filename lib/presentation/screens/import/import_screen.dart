@@ -735,6 +735,23 @@ class _ImportResultCard extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
+                  // Show embedded lorebook indicator
+                  if (result.character?.characterBook != null &&
+                      result.character!.characterBook!.entries.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Icon(Icons.auto_stories, size: 14, color: AppTheme.accentColor),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${result.character!.characterBook!.entries.length} 条世界书',
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: AppTheme.accentColor,
+                              ),
+                        ),
+                      ],
+                    ),
+                  ],
                   if (result.error != null) ...[
                     const SizedBox(height: 4),
                     Text(

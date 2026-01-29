@@ -122,6 +122,8 @@ class _BackgroundSettingsScreenState extends ConsumerState<BackgroundSettingsScr
 
   Widget _buildCharacterAvatarSetting() {
     final useCharacterAvatar = ref.watch(appSettingsProvider.select((s) => s.useCharacterAvatarAsBackground));
+    final enableBlur = ref.watch(appSettingsProvider.select((s) => s.enableBackgroundBlur));
+    final backgroundOpacity = ref.watch(appSettingsProvider.select((s) => s.backgroundOpacity));
     final l10n = AppLocalizations.of(context);
     
     return Card(
@@ -132,11 +134,11 @@ class _BackgroundSettingsScreenState extends ConsumerState<BackgroundSettingsScr
           children: [
             Row(
               children: [
-                const Icon(Icons.account_circle, color: AppTheme.accentColor),
+                const Icon(Icons.wallpaper, color: AppTheme.accentColor),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    '角色卡图片背景', // Character Avatar Background
+                    '图片背景设置', // Image Background Settings
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
@@ -144,22 +146,68 @@ class _BackgroundSettingsScreenState extends ConsumerState<BackgroundSettingsScr
                 ),
               ],
             ),
-            const SizedBox(height: 8),
-            Text(
-              '启用后，如果角色卡有头像图片，将自动作为聊天背景（优先级低于角色专属背景和全局背景）',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: AppTheme.textMuted,
-              ),
-            ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
+            
+            // Use character avatar toggle
             SwitchListTile(
               title: const Text('使用角色卡图片作为背景'),
-              subtitle: const Text('优先级：角色专属背景 > 全局背景 > 角色卡图片 > 默认颜色'),
+              subtitle: const Text('如果角色卡有头像图片，将自动作为聊天背景'),
               value: useCharacterAvatar,
               onChanged: (value) {
                 ref.read(appSettingsProvider.notifier).updateUseCharacterAvatarAsBackground(value);
               },
               contentPadding: EdgeInsets.zero,
+            ),
+            
+            const Divider(height: 24),
+            
+            // Background opacity slider
+            Row(
+              children: [
+                const Icon(Icons.opacity, size: 20),
+                const SizedBox(width: 12),
+                const Text('背景透明度'),
+                const Spacer(),
+                Text('${(backgroundOpacity * 100).round()}%'),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Slider(
+              value: backgroundOpacity,
+              min: 0.1,
+              max: 1.0,
+              divisions: 18,
+              onChanged: (value) {
+                ref.read(appSettingsProvider.notifier).updateBackgroundOpacity(value);
+              },
+            ),
+            Text(
+              '应用于所有图片背景（自定义图片 + 角色卡图片）',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: AppTheme.textMuted,
+              ),
+            ),
+            
+            const Divider(height: 24),
+            
+            // Background blur toggle
+            SwitchListTile(
+              title: const Text('启用背景模糊效果'),
+              subtitle: const Text('应用模糊效果到所有图片背景'),
+              value: enableBlur,
+              onChanged: (value) {
+                ref.read(appSettingsProvider.notifier).updateEnableBackgroundBlur(value);
+              },
+              contentPadding: EdgeInsets.zero,
+            ),
+            
+            const SizedBox(height: 8),
+            Text(
+              '💡 优先级：角色专属背景 > 全局背景 > 角色卡图片 > 默认颜色',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: AppTheme.textMuted,
+                fontStyle: FontStyle.italic,
+              ),
             ),
           ],
         ),
@@ -318,61 +366,6 @@ class _BackgroundSettingsScreenState extends ConsumerState<BackgroundSettingsScr
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            // Opacity slider
-            Row(
-              children: [
-                const Icon(Icons.opacity, size: 20),
-                const SizedBox(width: 12),
-                Text(AppLocalizations.of(context).opacity),
-                const Spacer(),
-                Text('${(_currentBackground.opacity * 100).round()}%'),
-              ],
-            ),
-            Slider(
-              value: _currentBackground.opacity,
-              min: 0.1,
-              max: 1.0,
-              divisions: 18,
-              onChanged: (value) {
-                _saveBackground(_currentBackground.copyWith(opacity: value));
-              },
-            ),
-            const Divider(),
-            
-            // Blur toggle
-            SwitchListTile(
-              title: Text(AppLocalizations.of(context).blurEffect),
-              subtitle: Text(AppLocalizations.of(context).applyBlurToBackground),
-              value: _currentBackground.blur,
-              onChanged: (value) {
-                _saveBackground(_currentBackground.copyWith(blur: value));
-              },
-              contentPadding: EdgeInsets.zero,
-            ),
-            
-            // Blur amount slider
-            if (_currentBackground.blur) ...[
-              Row(
-                children: [
-                  const Icon(Icons.blur_on, size: 20),
-                  const SizedBox(width: 12),
-                  Text(AppLocalizations.of(context).blurAmount),
-                  const Spacer(),
-                  Text('${_currentBackground.blurAmount.round()}'),
-                ],
-              ),
-              Slider(
-                value: _currentBackground.blurAmount,
-                min: 1,
-                max: 20,
-                divisions: 19,
-                onChanged: (value) {
-                  _saveBackground(_currentBackground.copyWith(blurAmount: value));
-                },
-              ),
-            ],
-            
-            const Divider(),
             
             // Bubble opacity slider
             Row(
@@ -426,11 +419,15 @@ class _BackgroundSettingsScreenState extends ConsumerState<BackgroundSettingsScr
           final destPath = p.join(bgDir.path, fileName);
           await File(file.path!).copy(destPath);
 
+          // Get global settings
+          final enableBlur = ref.read(appSettingsProvider.select((s) => s.enableBackgroundBlur));
+          final opacity = ref.read(appSettingsProvider.select((s) => s.backgroundOpacity));
+          
           await _saveBackground(ChatBackground.imagePath(
             destPath,
-            opacity: _currentBackground.opacity,
-            blur: _currentBackground.blur,
-            blurAmount: _currentBackground.blurAmount,
+            opacity: opacity,
+            blur: enableBlur,
+            blurAmount: 10.0,
             bubbleOpacity: _currentBackground.bubbleOpacity,
           ));
         }
@@ -474,11 +471,15 @@ class _BackgroundSettingsScreenState extends ConsumerState<BackgroundSettingsScr
             onPressed: () {
               final url = controller.text.trim();
               if (url.isNotEmpty) {
+                // Get global settings
+                final enableBlur = ref.read(appSettingsProvider.select((s) => s.enableBackgroundBlur));
+                final opacity = ref.read(appSettingsProvider.select((s) => s.backgroundOpacity));
+                
                 _saveBackground(ChatBackground.imageUrl(
                   url,
-                  opacity: _currentBackground.opacity,
-                  blur: _currentBackground.blur,
-                  blurAmount: _currentBackground.blurAmount,
+                  opacity: opacity,
+                  blur: enableBlur,
+                  blurAmount: 10.0,
                   bubbleOpacity: _currentBackground.bubbleOpacity,
                 ));
                 Navigator.pop(context);

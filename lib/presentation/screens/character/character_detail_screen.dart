@@ -9,6 +9,7 @@ import 'package:native_tavern/l10n/generated/app_localizations.dart';
 import 'package:native_tavern/presentation/providers/character_providers.dart';
 import 'package:native_tavern/presentation/providers/chat_providers.dart';
 import 'package:native_tavern/presentation/theme/app_theme.dart';
+import 'package:native_tavern/presentation/widgets/common/character_avatar_image.dart';
 
 /// Provider for loading a single character by ID
 final characterDetailProvider = FutureProvider.family<Character?, String>((ref, id) async {
@@ -402,12 +403,11 @@ class _CharacterDetailContentState extends ConsumerState<_CharacterDetailContent
 
   Widget _buildAvatarBackground(Character character) {
     if (character.assets?.avatarPath != null) {
-      final file = File(character.assets!.avatarPath!);
       return Stack(
         fit: StackFit.expand,
         children: [
-          Image.file(
-            file,
+          CharacterAvatarImage(
+            imagePath: character.assets!.avatarPath!,
             fit: BoxFit.cover,
             errorBuilder: (_, __, ___) => _defaultBackground(),
           ),
