@@ -389,7 +389,7 @@ class _MessageContentWidgetState extends State<MessageContentWidget> {
       },
       child: MarkdownBody(
         data: content,
-        selectable: widget.selectable,
+        selectable: false, // Must be false when wrapped in SelectionArea to avoid conflict
         shrinkWrap: true,
         softLineBreak: true, // Enable soft line breaks for proper text wrapping
         imageBuilder: (uri, title, alt) {
