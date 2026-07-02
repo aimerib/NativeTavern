@@ -12,9 +12,9 @@ extension ChatLayoutModeExtension on ChatLayoutMode {
   String get displayName {
     switch (this) {
       case ChatLayoutMode.bubble:
-        return '气泡模式';
+        return 'Bubble Mode';
       case ChatLayoutMode.visualNovel:
-        return '小说模式';
+        return 'Novel Mode';
     }
   }
   

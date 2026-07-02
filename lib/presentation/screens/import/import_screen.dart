@@ -377,9 +377,9 @@ class _ImportScreenState extends ConsumerState<ImportScreen> {
       // Show summary message
       final message = successCount > 0
           ? errorCount > 0
-              ? '导入成功 $successCount 个，失败 $errorCount 个'
-              : '成功导入 $successCount 个角色卡！'
-          : '所有导入都失败了';
+              ? 'Imported $successCount successfully, $errorCount failed'
+              : 'Successfully imported $successCount character card(s)!'
+          : 'All imports failed';
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -522,12 +522,12 @@ class _FilePickerViewState extends State<_FilePickerView> {
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        '选择角色卡文件',
+                        'Select Character Card File',
                         style: Theme.of(context).textTheme.titleMedium,
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        '支持批量导入 • PNG, CharX, JSON 格式',
+                        'Supports batch import • PNG, CharX, JSON formats',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                               color: AppTheme.textMuted,
                             ),
@@ -586,7 +586,7 @@ class _FilePickerViewState extends State<_FilePickerView> {
                           const SizedBox(width: 12),
                           Expanded(
                             child: Text(
-                              '从网址导入',
+                              'Import from URL',
                               style: Theme.of(context).textTheme.titleMedium,
                             ),
                           ),
@@ -602,7 +602,7 @@ class _FilePickerViewState extends State<_FilePickerView> {
                       TextField(
                         controller: _urlController,
                         decoration: InputDecoration(
-                          hintText: '输入角色卡链接...',
+                          hintText: 'Enter character card link...',
                           hintStyle: const TextStyle(color: AppTheme.textMuted),
                           prefixIcon: const Icon(Icons.link, size: 20),
                           suffixIcon: Row(
@@ -611,12 +611,12 @@ class _FilePickerViewState extends State<_FilePickerView> {
                               IconButton(
                                 icon: const Icon(Icons.content_paste, size: 20),
                                 onPressed: _pasteAndImport,
-                                tooltip: '粘贴并导入',
+                                tooltip: 'Paste and Import',
                               ),
                               IconButton(
                                 icon: const Icon(Icons.download, size: 20),
                                 onPressed: widget.isLoading ? null : _handleUrlImport,
-                                tooltip: '导入',
+                                tooltip: 'Import',
                               ),
                             ],
                           ),
@@ -630,7 +630,7 @@ class _FilePickerViewState extends State<_FilePickerView> {
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        '支持的社区（点击访问）：',
+                        'Supported communities (tap to visit):',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                               color: AppTheme.textMuted,
                             ),
@@ -651,7 +651,7 @@ class _FilePickerViewState extends State<_FilePickerView> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        '也支持公开的 PNG / JSON 链接',
+                        'Public PNG / JSON links are also supported',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                               color: AppTheme.textMuted,
                             ),
@@ -723,7 +723,7 @@ class _FilePickerViewState extends State<_FilePickerView> {
         const SizedBox(height: 8),
         const _FormatTile(
           icon: Icons.link,
-          title: '社区链接',
+          title: 'Community Link',
           description: 'NativeTavern, Chub.ai, JanitorAI, Pygmalion, RisuRealm, AICharacterCards',
         ),
       ],
@@ -844,7 +844,7 @@ class _BatchImportResults extends StatelessWidget {
                 const LinearProgressIndicator(),
                 const SizedBox(height: 12),
                 Text(
-                  '处理中: $processedFiles / $totalFiles',
+                  'Processing: $processedFiles / $totalFiles',
                   style: Theme.of(context).textTheme.bodyMedium,
                 ),
               ] else ...[
@@ -853,19 +853,19 @@ class _BatchImportResults extends StatelessWidget {
                   children: [
                     _StatChip(
                       icon: Icons.check_circle,
-                      label: '成功',
+                      label: 'Success',
                       count: successCount,
                       color: Colors.green,
                     ),
                     _StatChip(
                       icon: Icons.error,
-                      label: '失败',
+                      label: 'Failed',
                       count: errorCount,
                       color: Colors.red,
                     ),
                     _StatChip(
                       icon: Icons.folder,
-                      label: '总计',
+                      label: 'Total',
                       count: totalFiles,
                       color: AppTheme.accentColor,
                     ),
@@ -878,7 +878,7 @@ class _BatchImportResults extends StatelessWidget {
                     child: ElevatedButton.icon(
                       onPressed: onImportAll,
                       icon: const Icon(Icons.download),
-                      label: Text('导入全部 ($successCount 个角色卡)'),
+                      label: Text('Import All ($successCount character card(s))'),
                       style: ElevatedButton.styleFrom(
                         minimumSize: const Size(0, 48),
                       ),
@@ -1006,7 +1006,7 @@ class _ImportResultCard extends StatelessWidget {
                         Icon(Icons.auto_stories, size: 14, color: AppTheme.accentColor),
                         const SizedBox(width: 4),
                         Text(
-                          '${result.character!.characterBook!.entries.length} 条世界书',
+                          '${result.character!.characterBook!.entries.length} lorebook entries',
                           style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                 color: AppTheme.accentColor,
                               ),

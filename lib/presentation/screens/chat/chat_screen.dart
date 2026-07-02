@@ -61,7 +61,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   final ScrollController _scrollController = ScrollController();
   final FocusNode _focusNode = FocusNode();
   bool _showSlashSuggestions = false;
-  bool _showInputMenu = false; // 控制输入框左侧菜单的显示
+  bool _showInputMenu = false; // Controls visibility of the menu to the left of the input field
   final List<ChatAttachment> _pendingAttachments = [];
   final ImagePicker _imagePicker = ImagePicker();
 
@@ -729,7 +729,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                   ? Icons.auto_stories // Novel mode icon
                   : Icons.chat_bubble, // Bubble mode icon
             ),
-            tooltip: '切换布局',
+            tooltip: 'Switch Layout',
             onPressed: () {
               final currentMode = ref.read(appSettingsProvider).chatLayoutMode;
               final newMode =
@@ -1319,7 +1319,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                     style: IconButton.styleFrom(
                       backgroundColor: Colors.red,
                     ),
-                    tooltip: '停止生成',
+                    tooltip: 'Stop Generating',
                   )
                 else
                   IconButton.filled(

@@ -1,7 +1,7 @@
 {
     "id": "builtin_eldia_legend",
-    "name": "エルディア伝説",
-    "description": "『エルディア伝説』オリジナルファンタジー世界観設定。エルディア王国、聖なる紋章、守護者、王女、魔王など、オリジナルの核心的な要素を含む。ファンタジーアドベンチャーのロールプレイに最適。",
+    "name": "Legend of Eldia",
+    "description": "Original fantasy world-building setting for 'Legend of Eldia'. Includes core original elements such as the Kingdom of Eldia, the Sacred Emblems, the Guardian, the Princess, and the Dark Lord. Ideal for fantasy adventure roleplay.",
     "enabled": false,
     "isGlobal": false,
     "entries": [
@@ -9,132 +9,132 @@
             "id": "entry_001",
             "worldInfoId": "builtin_eldia_legend",
             "keys": [
-                "聖なる紋章",
-                "三つの紋章",
-                "古代の遺産"
+                "Sacred Emblem",
+                "Three Emblems",
+                "Ancient Legacy"
             ],
-            "content": "聖なる紋章は三大精霊（イグニス、アクア、テラ）が残した古代の遺産。力の紋章（魔王）、知恵の紋章（王女）、勇気の紋章（守護者）の三つに分かれる。三つを集めた者は絶対的な力を得るが、心が均衡していないと分裂する。紋章は願いを叶える力を持つ。",
+            "content": "The Sacred Emblems are an ancient legacy left behind by the three great spirits (Ignis, Aqua, and Terra). They are divided into three: the Emblem of Power (borne by the Dark Lord), the Emblem of Wisdom (borne by the Princess), and the Emblem of Courage (borne by the Guardian). Whoever gathers all three gains absolute power, but if their heart lacks balance, the emblem will shatter. The emblems hold the power to grant wishes.",
             "enabled": true,
             "constant": false,
             "position": 1,
             "insertionOrder": 100,
-            "comment": "聖なる紋章の設定"
+            "comment": "Sacred Emblem lore"
         },
         {
             "id": "entry_002",
             "worldInfoId": "builtin_eldia_legend",
             "keys": [
-                "エルディア王国",
-                "エルディア",
-                "王国"
+                "Kingdom of Eldia",
+                "Eldia",
+                "Kingdom"
             ],
-            "content": "エルディア王国は緑豊かな大地に広がる王国。エルディア城を中心に、クリスタル村、水晶の湖、ドワーフの鉱山、フェニックスの巣など様々な種族が共存する。ルミナ平原、炎の山脈、銀の川、光の湖などの自然が豊富。定期的に闇の魔王の脅威に晒されるが、守護者と王女の活躍により守られている。",
+            "content": "The Kingdom of Eldia spans a lush, verdant land. Centered on Eldia Castle, it is home to Crystal Village, Crystal Lake, the Dwarven Mines, the Phoenix Nest, and many other places where various races coexist. It is rich in nature, featuring the Lumina Plains, the Flame Mountains, the Silver River, and the Lake of Light. The kingdom is periodically threatened by the Dark Lord, but it is protected by the efforts of the Guardian and the Princess.",
             "enabled": true,
             "constant": false,
             "position": 1,
             "insertionOrder": 90,
-            "comment": "エルディア王国"
+            "comment": "Kingdom of Eldia"
         },
         {
             "id": "entry_003",
             "worldInfoId": "builtin_eldia_legend",
             "keys": [
-                "エターナルブレード",
-                "聖剣",
-                "守護者の剣"
+                "Eternal Blade",
+                "Holy Sword",
+                "Guardian's Sword"
             ],
-            "content": "エターナルブレードは闇を祓う聖なる剣。「時の聖堂」に安置され、選ばれた守護者のみが引き抜ける。別名「永遠の剣」とも呼ばれ、闇の魔王など邪悪な存在に対して絶大な威力を発揮する。剣には精霊ルミナが宿り、守護者を導く。使用には勇気の紋章と強い心が必要。",
+            "content": "The Eternal Blade is a holy sword that dispels darkness. Enshrined in the 'Temple of Time,' it can only be drawn by the chosen Guardian. Also known as the 'Sword of Eternity,' it unleashes tremendous power against evil beings such as the Dark Lord. The spirit Lumina dwells within the blade and guides the Guardian. Wielding it requires the Emblem of Courage and a strong heart.",
             "enabled": true,
             "constant": false,
             "position": 1,
             "insertionOrder": 80,
-            "comment": "エターナルブレード"
+            "comment": "Eternal Blade"
         },
         {
             "id": "entry_004",
             "worldInfoId": "builtin_eldia_legend",
             "keys": [
-                "種族",
-                "エルディア人",
-                "水の民",
-                "岩の民"
+                "Races",
+                "Eldians",
+                "Water Folk",
+                "Rock Folk"
             ],
-            "content": "エルディアには多様な種族が存在：エルディア人（人間）、水の民（水棲種族）、岩の民（鉱石種族）、翼の民（翼人種族）、砂漠の民（砂漠の戦士）、古代の民（古代魔法を継承する一族）、森の精霊（自然の守護者）。各種族は独自の文化と能力を持ち、互いに協力してエルディアを守る。",
+            "content": "Many different races exist in Eldia: the Eldians (humans), the Water Folk (an aquatic race), the Rock Folk (a mineral-born race), the Wing Folk (a winged race), the Desert Folk (desert warriors), the Ancient Folk (a clan that inherits ancient magic), and the Forest Spirits (guardians of nature). Each race has its own unique culture and abilities, and they work together to protect Eldia.",
             "enabled": true,
             "constant": false,
             "position": 1,
             "insertionOrder": 70,
-            "comment": "種族設定"
+            "comment": "Race lore"
         },
         {
             "id": "entry_005",
             "worldInfoId": "builtin_eldia_legend",
             "keys": [
-                "クリスタルオーブ",
-                "古代魔法",
-                "古代の民"
+                "Crystal Orb",
+                "Ancient Magic",
+                "Ancient Folk"
             ],
-            "content": "クリスタルオーブは古代の民が開発した高度な魔法技術の結晶。様々な機能（エネルギー弾、引力操作、時間減速、氷結魔法）を持つルーン（魔法紋）を搭載。クリスタルタワーで地図を開放し、試練の祠をクリアすることで能力を獲得。エルディア世界では重要なアイテム。",
+            "content": "The Crystal Orb is the crystallization of advanced magical technology developed by the Ancient Folk. It is equipped with runes (magic sigils) offering various functions, including energy bolts, gravity manipulation, time slowdown, and freezing magic. Players unlock the map at Crystal Towers and gain new abilities by clearing Trial Shrines. It is a vital item throughout the world of Eldia.",
             "enabled": true,
             "constant": false,
             "position": 1,
             "insertionOrder": 60,
-            "comment": "古代魔法"
+            "comment": "Ancient Magic"
         },
         {
             "id": "entry_006",
             "worldInfoId": "builtin_eldia_legend",
             "keys": [
-                "ダークロード",
-                "闇の魔王",
-                "魔王"
+                "Dark Lord",
+                "Lord of Darkness",
+                "Demon King"
             ],
-            "content": "ダークロードは砂漠の民出身の闇の魔王。力の紋章を宿し、不死に近い存在。野望のためにエルディア王国を何度も襲撃。最終的には魔獣の姿に変身する。エターナルブレードと光の矢のみが彼を封印できる。輪廻転生を繰り返し、永遠に守護者と王女と戦い続ける運命。",
+            "content": "The Dark Lord is a demon king born of the Desert Folk. He bears the Emblem of Power and is a being close to immortal. Driven by ambition, he has attacked the Kingdom of Eldia many times. In his final form, he transforms into a monstrous beast. Only the Eternal Blade and the Arrow of Light can seal him away. Bound by a cycle of reincarnation, he is fated to battle the Guardian and the Princess for all eternity.",
             "enabled": true,
             "constant": false,
             "position": 1,
             "insertionOrder": 50,
-            "comment": "ダークロード"
+            "comment": "Dark Lord"
         },
         {
             "id": "entry_007",
             "worldInfoId": "builtin_eldia_legend",
             "keys": [
-                "アルト",
-                "守護者",
-                "緑の守護者"
+                "Alto",
+                "Guardian",
+                "Green Guardian"
             ],
             "secondaryKeys": [
-                "勇気の紋章",
-                "エターナルブレード"
+                "Emblem of Courage",
+                "Eternal Blade"
             ],
-            "content": "アルトは代々現れる守護者の名前。緑のマントと銀の鎧がトレードマーク。勇気の紋章を宿し、エターナルブレードを使いこなす。様々な種族と協力し、謎解きと戦闘を通じて闇の魔王を倒す。寡黙だが正義感が強く、困っている人を見過ごせない性格。各時代に異なる守護者が現れるが、全員が同じ勇者の魂を継承している。",
+            "content": "Alto is the name borne by the Guardian who appears across generations. His trademark is a green cloak and silver armor. He bears the Emblem of Courage and wields the Eternal Blade with mastery. Working together with various races, he defeats the Dark Lord through puzzle-solving and combat. Though a man of few words, he has a strong sense of justice and cannot ignore those in need. A different Guardian appears in each era, but all of them share the same heroic soul.",
             "enabled": true,
             "constant": false,
             "selective": true,
             "position": 1,
             "insertionOrder": 110,
-            "comment": "守護者アルト"
+            "comment": "Guardian Alto"
         },
         {
             "id": "entry_008",
             "worldInfoId": "builtin_eldia_legend",
             "keys": [
-                "セレナ王女",
-                "王女",
-                "知恵の王女"
+                "Princess Serena",
+                "Princess",
+                "Princess of Wisdom"
             ],
             "secondaryKeys": [
-                "知恵の紋章",
-                "ルミナ"
+                "Emblem of Wisdom",
+                "Lumina"
             ],
-            "content": "セレナはエルディア王国の王女。知恵の紋章を宿し、女神ルミナの血を引く。強力な封印の力を持ち、時の水晶や光の弓など聖なるアイテムを使いこなす。アルトと協力して闇の魔王に対抗。美しく聡明で、王国と民のために自己犠牲も厭わない。古代の民の姿で変装することもある。",
+            "content": "Serena is the Princess of the Kingdom of Eldia. She bears the Emblem of Wisdom and carries the bloodline of the goddess Lumina. She possesses powerful sealing abilities and wields sacred items such as the Crystal of Time and the Bow of Light. She works together with Alto to stand against the Dark Lord. Beautiful and intelligent, she does not hesitate to sacrifice herself for the kingdom and its people. She sometimes disguises herself in the guise of the Ancient Folk.",
             "enabled": true,
             "constant": false,
             "selective": true,
             "position": 1,
             "insertionOrder": 105,
-            "comment": "セレナ王女"
+            "comment": "Princess Serena"
         }
     ],
     "createdAt": "2026-01-10T07:50:00.000Z",

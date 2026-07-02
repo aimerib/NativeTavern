@@ -138,7 +138,7 @@ class _BackgroundSettingsScreenState extends ConsumerState<BackgroundSettingsScr
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    '图片背景设置', // Image Background Settings
+                    'Image Background Settings',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
@@ -150,8 +150,8 @@ class _BackgroundSettingsScreenState extends ConsumerState<BackgroundSettingsScr
             
             // Use character avatar toggle
             SwitchListTile(
-              title: const Text('使用角色卡图片作为背景'),
-              subtitle: const Text('如果角色卡有头像图片，将自动作为聊天背景'),
+              title: const Text('Use Character Card Image as Background'),
+              subtitle: const Text('If the character card has an avatar image, it will automatically be used as the chat background'),
               value: useCharacterAvatar,
               onChanged: (value) {
                 ref.read(appSettingsProvider.notifier).updateUseCharacterAvatarAsBackground(value);
@@ -166,7 +166,7 @@ class _BackgroundSettingsScreenState extends ConsumerState<BackgroundSettingsScr
               children: [
                 const Icon(Icons.opacity, size: 20),
                 const SizedBox(width: 12),
-                const Text('背景透明度'),
+                const Text('Background Opacity'),
                 const Spacer(),
                 Text('${(backgroundOpacity * 100).round()}%'),
               ],
@@ -182,7 +182,7 @@ class _BackgroundSettingsScreenState extends ConsumerState<BackgroundSettingsScr
               },
             ),
             Text(
-              '应用于所有图片背景（自定义图片 + 角色卡图片）',
+              'Applies to all image backgrounds (custom images + character card images)',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 color: AppTheme.textMuted,
               ),
@@ -192,8 +192,8 @@ class _BackgroundSettingsScreenState extends ConsumerState<BackgroundSettingsScr
             
             // Background blur toggle
             SwitchListTile(
-              title: const Text('启用背景模糊效果'),
-              subtitle: const Text('应用模糊效果到所有图片背景'),
+              title: const Text('Enable Background Blur Effect'),
+              subtitle: const Text('Apply a blur effect to all image backgrounds'),
               value: enableBlur,
               onChanged: (value) {
                 ref.read(appSettingsProvider.notifier).updateEnableBackgroundBlur(value);
@@ -203,7 +203,7 @@ class _BackgroundSettingsScreenState extends ConsumerState<BackgroundSettingsScr
             
             const SizedBox(height: 8),
             Text(
-              '💡 优先级：角色专属背景 > 全局背景 > 角色卡图片 > 默认颜色',
+              '💡 Priority: Character-specific background > Global background > Character card image > Default color',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 color: AppTheme.textMuted,
                 fontStyle: FontStyle.italic,

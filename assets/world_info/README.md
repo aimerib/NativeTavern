@@ -1,24 +1,24 @@
-# 内置世界书配置 / Built-in World Info / 内蔵ワールド情報
+# Built-in World Info Configuration
 
-本目录包含NativeTavern的内置世界书(Lorebook)配置文件。
+This directory contains NativeTavern's built-in World Info (Lorebook) configuration files.
 
-## 可用世界书 / Available World Info / 利用可能なワールド情報
+## Available World Info
 
-### 1. 灵域修真录 (mortal_cultivation.json) 🇨🇳
-**中文原创世界观**
-**内容：** 原创修真世界《灵域修真录》的世界设定
-- 修真境界体系（聚灵期到真灵）
-- 宗门势力（青云宗、五宗联盟）
-- 法宝灵丹系统
-- 修炼功法和资源
-- 主角林尘的设定
+### 1. Spirit Realm Cultivation Chronicle (mortal_cultivation.json) 🇨🇳
+**Original Chinese-language world setting**
+**Content:** World setting for the original cultivation world *Spirit Realm Cultivation Chronicle*
+- Cultivation realm system (from Spirit Gathering stage to True Spirit)
+- Sect factions (Azure Cloud Sect, Alliance of Five Sects)
+- Magic treasure and spirit pill system
+- Cultivation techniques and resources
+- Setting for the protagonist, Lin Chen
 
-**适用场景：**
-- 修真题材角色扮演
-- 东方玄幻故事创作
-- 修真世界观探索
+**Use Cases:**
+- Cultivation-themed roleplay
+- Eastern fantasy story creation
+- Exploring the cultivation world setting
 
-**词条数量：** 7个核心设定
+**Entry Count:** 7 core settings
 
 ---
 
@@ -42,97 +42,83 @@
 
 ---
 
-### 3. エルディア伝説 (zelda_legend.json) 🇯🇵
-**日本語オリジナルコンテンツ**
-**内容：** 『エルディア伝説』オリジナルファンタジー世界観設定
-- 聖なる紋章（力・知恵・勇気）
-- エルディア王国と種族
-- エターナルブレードと聖なる武器
-- 古代魔法とクリスタルオーブ
-- ダークロードとの戦い
-- 守護者アルトとセレナ王女
+### 3. Eldia Legend (zelda_legend.json) 🇯🇵
+**Original Japanese-language content**
+**Content:** World setting for the original fantasy work *Eldia Legend*
+- Sacred Emblems (Power, Wisdom, Courage)
+- The Kingdom of Eldia and its races
+- The Eternal Blade and sacred weapons
+- Ancient magic and crystal orbs
+- The battle against the Dark Lord
+- The Guardian Alto and Princess Serena
 
-**適用シーン：**
-- ファンタジーテーマのロールプレイ
-- オリジナルアドベンチャー創作
-- エルディア世界の探索
+**Use Cases:**
+- Fantasy-themed roleplay
+- Original adventure story creation
+- Exploring the world of Eldia
 
-**エントリー数：** 8つのコア設定
+**Entry Count:** 8 core settings
 
 ---
 
-## 原创内容声明 / Original Content Notice / オリジナルコンテンツ声明
+## Original Content Notice
 
-**重要提示 / Important Notice / 重要なお知らせ：**
-
-本目录中的所有世界书均为**完全原创内容**，不涉及任何版权问题。
+**Important Notice:**
 
 All world info files in this directory are **entirely original creations** and do not involve any copyright issues.
 
-このディレクトリのすべてのワールド情報は**完全オリジナルコンテンツ**であり、著作権の問題はありません。
-
-虽然这些世界观受到经典作品的启发，但所有的设定、名称、背景故事都经过重新创作，形成了独特的原创内容：
-
 While these worldbuildings are inspired by classic works, all settings, names, and background stories have been reimagined to create unique original content:
 
-これらの世界観は古典作品からインスピレーションを得ていますが、すべての設定、名前、背景ストーリーは再創造され、ユニークなオリジナルコンテンツとなっています：
-
-- **灵域修真录** - 原创修真世界，非《凡人修仙传》/ Original cultivation world, not "A Record of Mortal's Journey to Immortality" / オリジナル修真世界、「凡人修仙伝」ではない
-- **Guardian Universe** - 原创超级英雄宇宙，非漫威宇宙 / Original superhero universe, not Marvel Universe / オリジナルスーパーヒーロー宇宙、マーベルユニバースではない
-- **エルディア伝説** - オリジナルファンタジー世界、ゼルダの伝説ではない / Original fantasy world, not The Legend of Zelda / オリジナルファンタジー世界、ゼルダの伝説ではない
+- **Spirit Realm Cultivation Chronicle** - Original cultivation world, not *A Record of a Mortal's Journey to Immortality*
+- **Guardian Universe** - Original superhero universe, not the Marvel Universe
+- **Eldia Legend** - Original fantasy world, not The Legend of Zelda
 
 ---
 
-## 使用方法 / Usage / 使用方法
+## Usage
 
-### 自动读み込み / Auto-loading / 自動読み込み
-应用首次启动时会自动加载这些内置世界书到数据库中。
+### Auto-loading
 These built-in world infos will be automatically loaded into the database when you first launch the app.
-アプリを初めて起動すると、これらの内蔵ワールド情報が自動的にデータベースに読み込まれます。
 
-### 特点 / Features / 特徴
-- ✅ 开箱即用 / Ready to use / すぐに使える
-- ✅ 智能去重 / Smart deduplication / スマート重複除去
-- ✅ 可自由编辑 / Editable / 編集可能
-- ✅ 仅加载一次 / Loaded once / 一度だけ読み込み
-- ✅ 支持全局和角色绑定 / Global and character-specific / グローバルとキャラクター専用
+### Features
+- ✅ Ready to use
+- ✅ Smart deduplication
+- ✅ Editable
+- ✅ Loaded once
+- ✅ Supports both global and character-specific binding
 
 ---
 
-## 世界书工作原理 / How World Info Works / ワールド情報の仕組み
+## How World Info Works
 
-### 关键词触发 / Keyword Triggering / キーワードトリガー
-当对话中出现特定关键词时，相关条目会自动插入到提示词中：
+### Keyword Triggering
 When specific keywords appear in conversation, related entries are automatically inserted into prompts:
-会話に特定のキーワードが現れると、関連エントリーが自動的にプロンプトに挿入されます：
 
-- **主关键词 (keys)**: 触发条目的主要词汇
-- **次要关键词 (secondaryKeys)**: 可选的二次确认词汇
-- **选择性触发 (selective)**: 需要主次关键词同时出现
+- **Primary keywords (keys)**: The main terms that trigger an entry
+- **Secondary keywords (secondaryKeys)**: Optional terms for secondary confirmation
+- **Selective triggering (selective)**: Requires both primary and secondary keywords to appear together
 
-### 插入位置 / Insertion Position / 挿入位置
-- `beforeCharDefs`: 角色定义之前
-- `afterCharDefs`: 角色定义之后
-- `atDepth`: 特定深度位置
+### Insertion Position
+- `beforeCharDefs`: Before the character definition
+- `afterCharDefs`: After the character definition
+- `atDepth`: At a specific depth position
 
-### 优先级控制 / Priority Control / 優先順位制御
-- `insertionOrder`: 插入顺序（数字越小越靠前）
-- `constant`: 常驻条目（始终插入）
-- `probability`: 触发概率（0-100）
+### Priority Control
+- `insertionOrder`: Insertion order (smaller numbers are inserted earlier)
+- `constant`: Always-active entry (always inserted)
+- `probability`: Trigger probability (0-100)
 
 ---
 
-## 自定义世界书 / Custom World Info / カスタムワールド情報
+## Custom World Info
 
-你可以参考这些JSON文件创建自己的世界书：
 You can create your own world info based on these JSON files:
-これらのJSONファイルを参考に独自のワールド情報を作成できます：
 
 ```json
 {
   "id": "unique_world_info_id",
-  "name": "世界书名称 / World Info Name / ワールド情報名",
-  "description": "世界书描述 / Description / 説明",
+  "name": "World Info Name",
+  "description": "Description",
   "enabled": true,
   "isGlobal": false,
   "characterId": null,
@@ -140,10 +126,10 @@ You can create your own world info based on these JSON files:
     {
       "id": "entry_001",
       "worldInfoId": "unique_world_info_id",
-      "keys": ["关键词1", "关键词2"],
+      "keys": ["Keyword1", "Keyword2"],
       "secondaryKeys": [],
-      "content": "当关键词出现时插入的内容",
-      "comment": "条目说明",
+      "content": "Content inserted when the keyword appears",
+      "comment": "Entry description",
       "enabled": true,
       "constant": false,
       "selective": false,
@@ -159,59 +145,53 @@ You can create your own world info based on these JSON files:
 
 ---
 
-## 最佳实践 / Best Practices / ベストプラクティス
+## Best Practices
 
-1. **关键词选择 / Keyword Selection / キーワード選択**
-   - 使用核心词汇作为主关键词
-   - 避免过于常见的词（如"的"、"是"）
-   - 考虑同义词和变体
+1. **Keyword Selection**
+   - Use core terms as primary keywords
+   - Avoid words that are too common (e.g., function words like "the" or "is")
+   - Consider synonyms and variants
 
-2. **内容编写 / Content Writing / コンテンツ作成**
-   - 简洁明了，包含关键信息
-   - 使用第三人称描述
-   - 避免冗长的叙述
+2. **Content Writing**
+   - Keep it concise and clear, including key information
+   - Use third-person descriptions
+   - Avoid lengthy narration
 
-3. **插入控制 / Insertion Control / 挿入制御**
-   - 常用信息使用较低的insertionOrder
-   - 重要设定可设为constant
-   - 根据需要调整position
+3. **Insertion Control**
+   - Use a lower insertionOrder for frequently used information
+   - Important settings can be set as constant
+   - Adjust position as needed
 
-4. **性能优化 / Performance / パフォーマンス**
-   - 避免创建过多条目（建议<100）
-   - 使用selective减少不必要的插入
-   - 定期清理未使用的条目
+4. **Performance**
+   - Avoid creating too many entries (recommended: fewer than 100)
+   - Use selective to reduce unnecessary insertions
+   - Periodically clean up unused entries
 
 ---
 
-## 多语言设计 / Multilingual Design / 多言語設計
+## Multilingual Design
 
-每个世界书使用特定语言以提供最佳体验：
 Each world info uses a specific language for the best experience:
-各ワールド情報は最高の体験を提供するため特定の言語を使用：
 
-- 🇨🇳 **中文** - 灵域修真录（原创修真文化）
-- 🇬🇧 **English** - Guardian Universe（原创超级英雄文化）
-- 🇯🇵 **日本語** - エルディア伝説（オリジナルファンタジー文化）
+- 🇨🇳 **Chinese** - Spirit Realm Cultivation Chronicle (original cultivation culture)
+- 🇬🇧 **English** - Guardian Universe (original superhero culture)
+- 🇯🇵 **Japanese** - Eldia Legend (original fantasy culture)
 
-这样设计确保：
 This design ensures:
-この設計により：
 
-1. 使用原创语言保持真实性
-2. 符合目标用户群体习惯
-3. 专业术语准确无误
+1. Using the original language preserves authenticity
+2. It matches the habits of the target user group
+3. Technical terminology remains accurate
 
 ---
 
-## 贡献 / Contributing / 貢献
+## Contributing
 
-欢迎贡献更多优质的世界书配置！
 Welcome to contribute more quality world info configurations!
-より質の高いワールド情報設定の貢献を歓迎します！
 
-请确保：/ Please ensure: / 確認してください：
-- JSON格式正确 / Correct JSON format / 正しいJSON形式
-- 内容准确专业 / Accurate and professional content / 正確で専門的な内容
-- 关键词合理 / Reasonable keywords / 適切なキーワード
-- 包含完整字段 / Complete field information / 完全なフィールド情報
-- **原创内容，不侵犯版权 / Original content, no copyright infringement / オリジナルコンテンツ、著作権侵害なし**
+Please ensure:
+- Correct JSON format
+- Accurate and professional content
+- Reasonable keywords
+- Complete field information
+- **Original content, no copyright infringement**

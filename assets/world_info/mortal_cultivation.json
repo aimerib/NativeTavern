@@ -1,7 +1,7 @@
 {
     "id": "builtin_spirit_realm_cultivation",
-    "name": "灵域修真录",
-    "description": "《灵域修真录》原创世界观设定。包含修真境界、宗门势力、法宝灵丹、修炼功法等核心设定。适合创作修真题材的角色扮演故事。",
+    "name": "Spirit Realm Cultivation Chronicles",
+    "description": "Original world-building setting for 'Spirit Realm Cultivation Chronicles.' Includes core settings such as cultivation realms, sect factions, treasures and spirit pills, and cultivation techniques. Ideal for creating cultivation (xianxia)-themed roleplay stories.",
     "enabled": false,
     "isGlobal": false,
     "entries": [
@@ -9,110 +9,110 @@
             "id": "entry_001",
             "worldInfoId": "builtin_spirit_realm_cultivation",
             "keys": [
-                "修真境界",
-                "境界",
-                "修为"
+                "Cultivation Realm",
+                "Realm",
+                "Cultivation Level"
             ],
-            "content": "修真境界分为：聚灵期（1-13层）、凝基期、凝丹期、化婴期、通神期、破虚期、融体期、登天期、渡劫期、真灵。每个大境界又分为初期、中期、后期、圆满四个小境界。突破境界需要大量资源和机缘，失败可能导致修为倒退甚至身死道消。",
+            "content": "Cultivation realms are divided into: Qi Condensation (Layers 1-13), Foundation Establishment, Core Formation, Nascent Soul, Divine Transformation, Void Breaking, Body Integration, Heaven Ascension, Tribulation Crossing, and True Spirit. Each major realm is further divided into four minor stages: Early, Middle, Late, and Peak. Breaking through to a higher realm requires vast resources and fortunate opportunities; failure can cause one's cultivation to regress, or even result in death and the dissipation of one's dao.",
             "enabled": true,
             "constant": false,
             "position": 1,
             "insertionOrder": 100,
-            "comment": "修真境界体系"
+            "comment": "Cultivation realm system"
         },
         {
             "id": "entry_002",
             "worldInfoId": "builtin_spirit_realm_cultivation",
             "keys": [
-                "青云宗",
-                "五宗",
-                "天元域"
+                "Azure Cloud Sect",
+                "Five Sects",
+                "Tianyuan Realm"
             ],
-            "content": "青云宗是天元域五大修真宗门之一，位于苍穹山脉。宗门以炼器闻名，拥有众多炼器大师。五宗包括：青云宗、灵兽峰、幻月殿、玄虚观、天剑阁。五宗联盟共同维护天元域修真界的秩序。",
+            "content": "The Azure Cloud Sect is one of the five great cultivation sects of the Tianyuan Realm, located in the Boundless Sky Mountains. The sect is renowned for artifact refining and is home to many master artificers. The five sects are: the Azure Cloud Sect, Spirit Beast Peak, the Phantom Moon Hall, the Mystic Void Temple, and the Heavenly Sword Pavilion. The Alliance of Five Sects works together to maintain order across the cultivation world of the Tianyuan Realm.",
             "enabled": true,
             "constant": false,
             "position": 1,
             "insertionOrder": 90,
-            "comment": "宗门势力"
+            "comment": "Sect factions"
         },
         {
             "id": "entry_003",
             "worldInfoId": "builtin_spirit_realm_cultivation",
             "keys": [
-                "法宝",
-                "灵器",
-                "法器"
+                "Treasure",
+                "Spirit Artifact",
+                "Magic Tool"
             ],
-            "content": "法宝分为：法器（聚灵期）、灵器（凝基期）、宝器（凝丹期及以上）、通天宝器（化婴期以上）、神器（通神期以上）。法宝需要用神识祭炼，威力随修为提升而增强。顶级法宝拥有器灵，可自主战斗。",
+            "content": "Treasures are divided into: Magic Tools (Qi Condensation), Spirit Artifacts (Foundation Establishment), Treasure Artifacts (Core Formation and above), Heaven-Reaching Treasures (Nascent Soul and above), and Divine Artifacts (Divine Transformation and above). Treasures must be refined using one's divine sense, and their power grows as one's cultivation advances. Top-tier treasures possess an artifact spirit and can fight on their own.",
             "enabled": true,
             "constant": false,
             "position": 1,
             "insertionOrder": 80,
-            "comment": "法宝体系"
+            "comment": "Treasure system"
         },
         {
             "id": "entry_004",
             "worldInfoId": "builtin_spirit_realm_cultivation",
             "keys": [
-                "灵丹",
-                "凝基丹",
-                "化婴丹"
+                "Spirit Pill",
+                "Foundation Establishment Pill",
+                "Nascent Soul Pill"
             ],
-            "content": "常见灵丹：凝基丹（助聚灵期修士凝基）、化婴丹（助凝基期修士凝丹）、通神丹（助凝丹期修士化婴）、回春丹（疗伤）、辟谷丹（代替食物）、解毒丹。高阶灵丹需要珍稀灵药和高超炼丹术，价值连城。",
+            "content": "Common spirit pills include: the Foundation Establishment Pill (helps Qi Condensation cultivators establish their foundation), the Nascent Soul Pill (helps Foundation Establishment cultivators form their core), the Divine Transformation Pill (helps Core Formation cultivators form their nascent soul), the Rejuvenation Pill (heals injuries), the Grain Avoidance Pill (replaces the need for food), and the Antidote Pill. High-grade spirit pills require rare spirit herbs and superb pill-refining skills, making them priceless.",
             "enabled": true,
             "constant": false,
             "position": 1,
             "insertionOrder": 70,
-            "comment": "灵丹系统"
+            "comment": "Spirit pill system"
         },
         {
             "id": "entry_005",
             "worldInfoId": "builtin_spirit_realm_cultivation",
             "keys": [
-                "功法",
-                "修炼",
-                "心法"
+                "Cultivation Technique",
+                "Cultivation",
+                "Mind Cultivation Method"
             ],
-            "content": "功法分为：基础功法（凡阶）、高级功法（灵阶）、顶级功法（圣阶）、仙界功法（仙阶）。功法包括：吐纳术（吸收灵气）、炼体术（强化肉身）、御剑术（驾驭飞剑）、遁术（逃跑技能）。修炼需要元晶、灵药辅助，闭关时需要护法。",
+            "content": "Cultivation techniques are divided into: Basic Techniques (Mortal Grade), Advanced Techniques (Spirit Grade), Top-Tier Techniques (Sacred Grade), and Immortal Techniques (Immortal Grade). Techniques include: the Breathing Technique (absorbs spiritual qi), the Body Tempering Technique (strengthens the physical body), the Sword Control Technique (commands a flying sword), and the Escape Technique (a fleeing skill). Cultivation requires the aid of spirit crystals and spirit herbs, and one needs a guardian to stand watch during secluded cultivation.",
             "enabled": true,
             "constant": false,
             "position": 1,
             "insertionOrder": 60,
-            "comment": "功法修炼"
+            "comment": "Techniques and cultivation"
         },
         {
             "id": "entry_006",
             "worldInfoId": "builtin_spirit_realm_cultivation",
             "keys": [
-                "元晶",
-                "灵脉",
-                "灵气"
+                "Spirit Crystal",
+                "Spirit Vein",
+                "Spiritual Qi"
             ],
-            "content": "元晶是修真界通用货币和修炼资源，分为低阶、中阶、高阶、极品四个等级。1块中阶元晶=100块低阶元晶。灵脉是灵气汇聚之地，宗门和洞府都建在灵脉之上。灵气浓度影响修炼速度。",
+            "content": "Spirit Crystals are the common currency and cultivation resource of the cultivation world, divided into four grades: Low, Medium, High, and Superior. One Medium-grade Spirit Crystal equals 100 Low-grade Spirit Crystals. Spirit Veins are places where spiritual qi gathers, and sects and cave abodes are built atop them. The concentration of spiritual qi affects the speed of cultivation.",
             "enabled": true,
             "constant": false,
             "position": 1,
             "insertionOrder": 50,
-            "comment": "修炼资源"
+            "comment": "Cultivation resources"
         },
         {
             "id": "entry_007",
             "worldInfoId": "builtin_spirit_realm_cultivation",
             "keys": [
-                "林尘",
-                "主角"
+                "Lin Chen",
+                "Protagonist"
             ],
             "secondaryKeys": [
-                "苍穹剑诀",
-                "时空珠"
+                "Boundless Sky Sword Manual",
+                "Space-Time Pearl"
             ],
-            "content": "林尘，凡人出身，机缘巧合下踏入修真界。性格谨慎低调，善于隐藏实力。拥有神秘时空珠，可加速时间流速。修炼《苍穹剑诀》，擅长炼丹和炼器。凭借坚韧意志和谨慎行事，一步步从聚灵期修炼至真灵境界。",
+            "content": "Lin Chen, born a mortal, entered the cultivation world through a fortunate twist of fate. Cautious and low-key by nature, he is skilled at concealing his true strength. He possesses a mysterious Space-Time Pearl that can accelerate the flow of time. He cultivates the 'Boundless Sky Sword Manual' and excels at pill and artifact refining. Through unyielding willpower and careful, deliberate action, he advances step by step from the Qi Condensation stage all the way to the True Spirit realm.",
             "enabled": true,
             "constant": false,
             "selective": true,
             "position": 1,
             "insertionOrder": 110,
-            "comment": "主角设定"
+            "comment": "Protagonist profile"
         }
     ],
     "createdAt": "2026-01-10T07:50:00.000Z",

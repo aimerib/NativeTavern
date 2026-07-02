@@ -58,3 +58,4 @@ resize_app_store_images.py
 config
 assets_for_discord
 scripts
+rust/target/

@@ -1,345 +1,378 @@
 # NativeTavern
 
 <p align="center">
-  <a href="README.md">简体中文</a> | <a href="README.en.md">English</a>
-</p>
-
-<p align="center">
   🌐 <a href="https://nativetavern.com/">Native Tavern</a>
 </p>
 
-一个原生跨平台移动应用（iOS/Android），将 SillyTavern 重新实现为高性能原生应用，完全兼容 SillyTavern 数据格式。
+A native cross-platform mobile application (iOS/Android) that reimplements SillyTavern as a high-performance native app with full compatibility for SillyTavern data formats.
 
-
-## 截图
+## Screenshots
 
 <p align="center">
-  <img src="photo/Chat.png" width="200" alt="聊天界面"/>
-  <img src="photo/Character.png" width="200" alt="角色界面"/>
-  <img src="photo/AiConfig.png" width="200" alt="AI配置"/>
+  <img src="photo/Chat.png" width="200" alt="Chat Screen"/>
+  <img src="photo/Character.png" width="200" alt="Character Screen"/>
+  <img src="photo/AiConfig.png" width="200" alt="AI Configuration"/>
 </p>
 
 <p align="center">
-  <img src="photo/AIPreset.png" width="200" alt="AI预设"/>
-  <img src="photo/PromptManager.png" width="200" alt="提示词管理"/>
-  <img src="photo/Wordbook.png" width="200" alt="世界信息/知识库"/>
+  <img src="photo/AIPreset.png" width="200" alt="AI Presets"/>
+  <img src="photo/PromptManager.png" width="200" alt="Prompt Manager"/>
+  <img src="photo/Wordbook.png" width="200" alt="World Info / Lorebook"/>
 </p>
 
-| 聊天 | 角色 | AI配置 |
+| Chat | Character | AI Config |
 |:---:|:---:|:---:|
-| 实时流式聊天，支持消息操作 | 角色卡片，包含头像和详情 | 多提供商LLM配置 |
+| Real-time streaming chat with message actions | Character cards with avatar and details | Multi-provider LLM configuration |
 
-| AI预设 | 提示词管理 | 世界信息 |
+| AI Preset | Prompt Manager | World Info |
 |:---:|:---:|:---:|
-| 导入SillyTavern预设 | 自定义提示词排序 | 基于关键词的上下文注入 |
+| Import SillyTavern presets | Custom prompt ordering | Keyword-based context injection |
 
-## 功能特性
+## Features
 
-### 核心功能 ✅
-- 📱 **原生移动应用** - 使用 Flutter 构建，支持 iOS 和 Android
-- ⚡ **高性能** - 针对移动设备优化
-- 🤖 **多提供商 LLM 支持** - OpenAI、Claude、OpenRouter、Gemini、Ollama、KoboldCpp
-- 📦 **完全兼容 ST** - 导入/导出 PNG 卡片、CharX、JSON
-- 💬 **流式响应** - 所有提供商的实时 SSE 流式传输
+### Core Features ✅
+- 📱 **Native Mobile App** - Built with Flutter for iOS and Android
+- ⚡ **High Performance** - Optimized for mobile devices
+- 🤖 **Multi-Provider LLM Support** - OpenAI, Claude, OpenRouter, Gemini, Ollama, KoboldCpp
+- 📦 **Full ST Compatibility** - Import/export PNG cards, CharX, JSON
+- 💬 **Streaming Responses** - Real-time SSE streaming from all providers
 
-### 角色管理 ✅
-- 📥 **导入格式** - PNG V2/V3、CharX（V3规范）、JSON
-- 📤 **导出格式** - PNG V3、带资源的 CharX、JSON
-- ✏️ **角色编辑器** - 创建/编辑角色的所有字段
-- 🖼️ **头像支持** - 自定义头像，支持图片选择器
-- 📚 **嵌入式知识库** - 完整的 CharX 知识库支持
+### Character Management ✅
+- 📥 **Import Formats** - PNG V2/V3, CharX (V3 spec), JSON
+- 📤 **Export Formats** - PNG V3, CharX with assets, JSON
+- ✏️ **Character Editor** - Create/edit characters with all fields
+- 🖼️ **Avatar Support** - Custom avatars with image picker
+- 📚 **Embedded Lorebooks** - Full CharX lorebook support
 
-### 聊天功能 ✅
-- 💬 **消息操作** - 编辑、删除、重新生成、在备选项之间滑动
-- 👥 **群聊** - 多角色对话，5种响应模式
-- 🔖 **书签** - 创建检查点和分支对话
-- 📝 **作者注释** - 可配置深度的注入
-- 🎭 **人设** - 用户档案管理，包含描述
-- 📄 **HTML/Markdown** - 聊天消息富文本渲染
+### Chat Features ✅
+- 💬 **Message Actions** - Edit, delete, regenerate, swipe between alternatives
+- 👥 **Group Chats** - Multi-character conversations with 5 response modes
+- 🔖 **Bookmarks** - Create checkpoints and branch conversations
+- 📝 **Author's Note** - Injection at configurable depth
+- 🎭 **Personas** - User profile management with descriptions
+- 📄 **HTML/Markdown** - Rich text rendering in chat messages
 
-### 世界信息/知识库 ✅
-- 🌍 **关键词匹配** - 基于触发器的上下文注入
-- 📍 **多个位置** - 系统提示前/后、角色定义、示例
-- 🔄 **递归支持** - 嵌套关键词扫描
-- 📊 **分组评分** - 基于优先级的条目选择
+### World Info / Lorebook ✅
+- 🌍 **Keyword Matching** - Trigger-based context injection
+- 📍 **Multiple Positions** - Before/after system prompt, character defs, examples
+- 🔄 **Recursion Support** - Nested keyword scanning
+- 📊 **Group Scoring** - Priority-based entry selection
 
-### 提示词管理 ✅
-- 📋 **提示词管理器** - 排序、启用/禁用提示词
-- 📥 **SillyTavern 预设导入** - 完整的 prompts + prompt_order 支持
-- 🎯 **自定义提示词** - 添加带角色支持的自定义部分
-- 📍 **深度注入** - 在特定消息深度插入提示词
+### Prompt Management ✅
+- 📋 **Prompt Manager** - Ordering, enabling/disabling prompts
+- 📥 **SillyTavern Preset Import** - Full prompts + prompt_order support
+- 🎯 **Custom Prompts** - Add custom sections with role support
+- 📍 **Depth Injection** - Insert prompts at specific message depths
 
-### 高级设置 ✅
-- 🎛️ **完整采样器控制** - Temperature、Top-P、Top-K、Min-P、Typical-P
-- 🔁 **重复惩罚** - 可配置范围
-- 🎲 **Mirostat** - Mode、Tau、Eta 设置
-- ✂️ **无尾采样** - TFS 和 Top-A 支持
-- 🛑 **停止序列** - 自定义停止标记
+### Advanced Settings ✅
+- 🎛️ **Full Sampler Control** - Temperature, Top-P, Top-K, Min-P, Typical-P
+- 🔁 **Repetition Penalty** - With configurable range
+- 🎲 **Mirostat** - Mode, Tau, Eta settings
+- ✂️ **Tail-Free Sampling** - TFS and Top-A support
+- 🛑 **Stop Sequences** - Custom stop tokens
 
-### 主题 ✅
-- 🎨 **18个内置主题** - 7个深色 + 11个浅色主题
-- 🌙 **深色主题** - 默认深色、午夜、森林、日落、玫瑰、海洋、AMOLED
-- ☀️ **浅色主题** - 纯净白、暖奶油、柔和薰衣草、薄荷清新、天空蓝、玫瑰粉、蜜桃、鼠尾草绿、纸张、复古
-- 🖌️ **主题编辑器** - 完整的颜色自定义
+### Themes ✅
+- 🎨 **18 Built-in Themes** - 7 dark + 11 light themes
+- 🌙 **Dark Themes** - Default Dark, Midnight, Forest, Sunset, Rose, Ocean, AMOLED
+- ☀️ **Light Themes** - Clean White, Warm Cream, Soft Lavender, Mint Fresh, Sky Blue, Rose Pink, Peach, Sage Green, Paper, Sepia
+- 🖌️ **Theme Editor** - Full color customization
 
-### 思维链支持 ✅
-- 🧠 **OpenAI o1/o3** - 解析 `reasoning_content` 字段
-- 💭 **Claude** - 解析 `thinking` 块
-- 🤔 **Gemini 2.0 Flash Thinking** - 解析 `thought` 字段
-- 💾 **推理存储** - 保存消息和滑动的推理内容
-- 📦 **可折叠UI** - 可展开的推理块，支持复制
-- ⏳ **流式显示** - 实时推理，带脉冲动画
+### Chain of Thought Support ✅
+- 🧠 **OpenAI o1/o3** - Parse `reasoning_content` field
+- 💭 **Claude** - Parse `thinking` blocks
+- 🤔 **Gemini 2.0 Flash Thinking** - Parse `thought` field
+- 💾 **Reasoning Storage** - Save reasoning with messages and swipes
+- 📦 **Collapsible UI** - Expandable reasoning blocks with copy support
+- ⏳ **Streaming Display** - Real-time reasoning with pulse animation
 
-### 角色标签 ✅
-- 🏷️ **标签管理** - 创建、编辑、删除标签
-- 🎨 **标签颜色** - 自定义十六进制颜色
-- 😀 **标签图标** - 表情符号图标用于视觉识别
-- 🔗 **角色分配** - 为角色分配多个标签
-- 🔍 **标签过滤** - 按标签过滤角色列表
+### Character Tags ✅
+- 🏷️ **Tag Management** - Create, edit, delete tags
+- 🎨 **Tag Colors** - Custom hex colors for tags
+- 😀 **Tag Icons** - Emoji icons for visual identification
+- 🔗 **Character Assignment** - Assign multiple tags to characters
+- 🔍 **Tag Filtering** - Filter character list by tags
 
-### Markdown输入 ✅
-- ⌨️ **键盘快捷键** - ⌘B 粗体、⌘I 斜体、⌘U 下划线
-- 📝 **格式化工具栏** - 紧凑的格式化按钮工具栏
-- 🔗 **链接支持** - ⌘K 快速插入链接
-- 💻 **代码块** - 行内代码和代码块快捷键
+### Markdown Input ✅
+- ⌨️ **Keyboard Shortcuts** - ⌘B bold, ⌘I italic, ⌘U underline
+- 📝 **Formatting Toolbar** - Compact toolbar with formatting buttons
+- 🔗 **Link Support** - ⌘K for quick link insertion
+- 💻 **Code Blocks** - Inline code and code block shortcuts
 
-### 表情精灵 ✅
-- 🎭 **情绪检测** - 从消息中自动检测情绪
-- 📁 **精灵管理** - 每个角色独立的精灵文件夹
-- 🖼️ **15种情绪** - 开心、悲伤、愤怒、惊讶、害怕等
-- ✨ **动画效果** - 平滑的淡入/缩放过渡
-- ⚙️ **可自定义** - 大小、位置、透明度设置
-- 🎬 **动作检测** - 检测 *微笑*、*大笑* 等动作
+### Expression Sprites ✅
+- 🎭 **Emotion Detection** - Automatic emotion detection from messages
+- 📁 **Sprite Management** - Per-character sprite folders
+- 🖼️ **15 Emotions** - Happy, sad, angry, surprised, scared, and more
+- ✨ **Animations** - Smooth fade/scale transitions
+- ⚙️ **Customizable** - Size, position, opacity settings
+- 🎬 **Action Detection** - Detects *smiles*, *laughs*, etc.
 
-### 文字转语音 ✅
-- 🔊 **多种提供商** - 系统TTS、ElevenLabs、Azure
-- 🎭 **角色独立语音** - 每个角色不同的语音
-- ▶️ **自动播放** - 自动朗读新消息
-- 🎚️ **语音控制** - 速度、音调、音量调节
-- 📝 **文本清理** - 移除markdown/HTML以获得自然语音
-- 🔄 **消息队列** - 排队多条消息
+### Text-to-Speech ✅
+- 🔊 **Multiple Providers** - System TTS, ElevenLabs, Azure
+- 🎭 **Per-Character Voices** - Different voice for each character
+- ▶️ **Auto-play** - Automatically read new messages
+- 🎚️ **Voice Controls** - Speed, pitch, volume adjustment
+- 📝 **Text Cleaning** - Removes markdown/HTML for natural speech
+- 🔄 **Message Queue** - Queue multiple messages
 
-### 语音转文字 ✅
-- 🎤 **语音输入** - 使用语音口述消息
-- 🌍 **16种语言** - 支持主要语言
-- 🔄 **多种提供商** - 系统STT、Whisper、Azure
-- 📝 **部分结果** - 说话时实时显示文字
-- ⚡ **自动发送** - 说完后自动发送
-- 🔁 **连续模式** - 持续监听多个短语
+### Speech-to-Text ✅
+- 🎤 **Voice Input** - Dictate messages using your voice
+- 🌍 **16 Languages** - Support for major languages
+- 🔄 **Multiple Providers** - System STT, Whisper, Azure
+- 📝 **Partial Results** - See text as you speak
+- ⚡ **Auto-send** - Automatically send after speaking
+- 🔁 **Continuous Mode** - Keep listening for multiple phrases
 
-### 翻译 ✅
-- 🌐 **30+种语言** - 在主要语言之间翻译
-- 🔄 **多种提供商** - Google、DeepL、LibreTranslate
-- 🔀 **自动翻译** - 接收和发送的消息
-- 🔍 **语言检测** - 自动检测源语言
-- 📝 **显示原文** - 在翻译旁显示原文
-- 🔘 **翻译按钮** - 按需翻译消息
+### Translation ✅
+- 🌐 **30+ Languages** - Translate between major languages
+- 🔄 **Multiple Providers** - Google, DeepL, LibreTranslate
+- 🔀 **Auto-translate** - Incoming and outgoing messages
+- 🔍 **Language Detection** - Auto-detect source language
+- 📝 **Show Original** - Display original alongside translation
+- 🔘 **Translate Button** - On-demand message translation
 
-### 图像生成 ✅
-- 🎨 **多种提供商** - Stable Diffusion、DALL-E、ComfyUI、Automatic1111
-- 📐 **尺寸预设** - 512x512、768x768、1024x1024等
-- ⚙️ **生成设置** - 步数、CFG比例、采样器选择
-- 🚫 **负面提示词** - 排除不需要的元素
-- 🎲 **采样器选项** - Euler、Euler A、DPM++、DDIM等
-- 🔧 **API配置** - 自定义端点和API密钥
+### Image Generation ✅
+- 🎨 **Multiple Providers** - Stable Diffusion, DALL-E, ComfyUI, Automatic1111
+- 📐 **Size Presets** - 512x512, 768x768, 1024x1024, and more
+- ⚙️ **Generation Settings** - Steps, CFG scale, sampler selection
+- 🚫 **Negative Prompts** - Exclude unwanted elements
+- 🎲 **Sampler Options** - Euler, Euler A, DPM++, DDIM, and more
+- 🔧 **API Configuration** - Custom endpoints and API keys
 
-### 正则脚本 ✅
-- 🔍 **查找/替换模式** - 对消息应用正则表达式
-- 📝 **脚本管理** - 创建、编辑、删除、重排序脚本
-- 🎯 **应用位置** - 用户输入、AI输出、斜杠命令
-- 📦 **预设** - 内置预设脚本
-- 🔄 **导入/导出** - 以JSON格式分享脚本
-- 🧪 **测试工具** - 应用前测试模式
+### Regex Scripts ✅
+- 🔍 **Find/Replace Patterns** - Apply regex to messages
+- 📝 **Script Management** - Create, edit, delete, reorder scripts
+- 🎯 **Placement Options** - User input, AI output, slash commands
+- 📦 **Presets** - Built-in preset scripts
+- 🔄 **Import/Export** - Share scripts as JSON
+- 🧪 **Test Widget** - Test patterns before applying
 
-### 变量系统 ✅
-- 🌐 **全局变量** - 应用范围的持久存储
-- 💬 **本地变量** - 每个聊天的变量存储
-- 📝 **变量宏** - {{getvar}}、{{setvar}}、{{incvar}}等
-- 🔢 **类型支持** - 数字、字符串、数组、对象
-- ➕ **操作** - 递增、递减、添加、连接
+### Variables System ✅
+- 🌐 **Global Variables** - App-wide persistent storage
+- 💬 **Local Variables** - Per-chat variable storage
+- 📝 **Variable Macros** - {{getvar}}, {{setvar}}, {{incvar}}, etc.
+- 🔢 **Type Support** - Numbers, strings, arrays, objects
+- ➕ **Operations** - Increment, decrement, add, concatenate
 
-### 聊天备份 ✅
-- 💾 **自动备份** - 可配置间隔（每小时、每天、每周）
-- 📁 **聊天备份** - 单独聊天导出（JSONL）
-- 📦 **完整备份** - 完整数据导出（JSON）
-- 🗑️ **保留策略** - 自动清理旧备份
-- 👁️ **查看/恢复** - 浏览和恢复备份
+### Chat Backups ✅
+- 💾 **Auto-Backup** - Configurable intervals (hourly, daily, weekly)
+- 📁 **Chat Backups** - Individual chat exports (JSONL)
+- 📦 **Full Backups** - Complete data exports (JSON)
+- 🗑️ **Retention** - Automatic cleanup of old backups
+- 👁️ **View/Restore** - Browse and restore backups
 
-### 宏系统 ✅
-- `{{user}}` - 当前人设名称
-- `{{char}}` - 角色名称
-- `{{time}}` / `{{date}}` / `{{weekday}}` - 日期/时间宏
-- `{{random:min:max}}` - 随机数生成
-- `{{roll:NdM}}` - 掷骰子
-- `{{idle_duration}}` - 距上次消息的时间
+### Logit Bias ✅
+- 🎚️ **Token Adjustment** - Increase/decrease token probabilities
+- 📝 **Multiple Formats** - Plain text, verbatim {text}, token IDs [123]
+- 📦 **Presets** - Save and manage bias presets
+- 🔄 **Import/Export** - Share presets as JSON
+- ✅ **Validation** - Real-time entry validation
+
+### CFG Scale ✅
+- 📊 **Guidance Scale** - Classifier-Free Guidance control
+- ➖ **Negative Prompts** - Steer model away from content
+- ➕ **Positive Prompts** - Enhance desired content
+- 🎭 **Per-Character** - Character-specific CFG settings
+- 💬 **Per-Chat** - Chat-specific overrides
+
+### Token Probabilities (Logprobs) ✅
+- 📈 **Probability Display** - View token probabilities
+- 🎨 **Color Coding** - Visual probability indicators
+- 🔄 **Alternative Tokens** - See top candidate tokens
+- 📊 **Statistics** - Token count and analysis
+
+### Tokenizer ✅
+- 🔢 **Token Counting** - Accurate token estimation
+- 🎨 **Visualization** - Color-coded token breakdown
+- 📊 **Statistics** - Character/token ratios
+- 🔧 **Multiple Tokenizers** - GPT, LLaMA, Claude, Mistral, etc.
+
+### Vector Storage / RAG ✅
+- 📚 **Collections** - Organize documents into collections
+- 🔍 **Similarity Search** - Find relevant context
+- 📝 **Document Chunking** - Fixed size, sentence, paragraph
+- 🎯 **Prompt Integration** - Auto-inject context
+- 📤 **Import/Export** - Share collections as JSON
+
+### Macro System ✅
+- `{{user}}` - Current persona name
+- `{{char}}` - Character name
+- `{{time}}` / `{{date}}` / `{{weekday}}` - Date/time macros
+- `{{random:min:max}}` - Random number generation
+- `{{roll:NdM}}` - Dice rolling
+- `{{idle_duration}}` - Time since last message
 - `{{lastMessage}}` / `{{lastUserMessage}}` / `{{lastCharMessage}}`
 
-### 斜杠命令 ✅
-- `/continue` - 继续生成
-- `/regenerate` - 重新生成最后一条消息
-- `/swipe` - 导航滑动
-- `/persona` - 切换人设
-- `/sys` - 发送系统消息
-- `/bg` - 更改背景
-- `/help` - 显示命令帮助
-- `/clear` - 清除消息
-- `/edit` - 编辑最后一条消息
-- `/delete` - 删除消息
-- `/bookmark` - 创建书签
-- `/note` - 设置作者注释
+### Slash Commands ✅
+- `/continue` - Continue generation
+- `/regenerate` - Regenerate last message
+- `/swipe` - Navigate swipes
+- `/persona` - Switch persona
+- `/sys` - Send system message
+- `/bg` - Change background
+- `/help` - Show command help
+- `/clear` - Clear messages
+- `/edit` - Edit last message
+- `/delete` - Delete messages
+- `/bookmark` - Create bookmark
+- `/note` - Set author's note
 
-### 背景 ✅
-- 🖼️ **自定义背景** - 设置聊天背景
-- 📁 **背景图库** - 管理背景图片
-- 🎚️ **透明度控制** - 调整背景透明度
-- 💬 **每个聊天的背景** - 不同聊天使用不同背景
+### Backgrounds ✅
+- 🖼️ **Custom Backgrounds** - Set chat backgrounds
+- 📁 **Background Gallery** - Manage background images
+- 🎚️ **Opacity Control** - Adjust background transparency
+- 💬 **Per-Chat Backgrounds** - Different background per chat
 
-## 技术栈
+## Tech Stack
 
-| 组件 | 技术 |
+| Component | Technology |
 |-----------|------------|
-| UI框架 | Flutter (Dart) |
-| 状态管理 | Riverpod |
-| 导航 | go_router |
-| 数据库 | SQLite (drift) |
-| 原生核心 | Rust (通过 FFI) |
-| HTTP客户端 | Dio |
+| UI Framework | Flutter (Dart) |
+| State Management | Riverpod |
+| Navigation | go_router |
+| Database | SQLite (drift) |
+| Native Core | Rust (via FFI) |
+| HTTP Client | Dio |
 
-## 项目结构
+## Project Structure
 
 ```
 native_tavern/
-├── lib/                    # Flutter/Dart 代码
-│   ├── main.dart          # 入口点
-│   ├── app.dart           # 应用配置
-│   ├── core/              # 核心工具
-│   ├── data/              # 数据层（模型、数据库、仓库）
-│   │   ├── models/        # 数据模型（Character、Chat、Message等）
-│   │   ├── database/      # 使用 Drift 的 SQLite 数据库
-│   │   └── repositories/  # 数据访问层
-│   ├── domain/            # 业务逻辑
-│   │   └── services/      # LLM服务、宏服务等
-│   └── presentation/      # UI层
-│       ├── providers/     # Riverpod 状态管理
-│       ├── screens/       # 应用界面
-│       ├── widgets/       # 可复用组件
-│       └── theme/         # 主题配置
-├── rust/                   # Rust 原生核心
+├── lib/                    # Flutter/Dart code
+│   ├── main.dart          # Entry point
+│   ├── app.dart           # App configuration
+│   ├── core/              # Core utilities
+│   ├── data/              # Data layer (models, database, repos)
+│   │   ├── models/        # Data models (Character, Chat, Message, etc.)
+│   │   ├── database/      # SQLite database with Drift
+│   │   └── repositories/  # Data access layer
+│   ├── domain/            # Business logic
+│   │   └── services/      # LLM service, Macro service, etc.
+│   └── presentation/      # UI layer
+│       ├── providers/     # Riverpod state management
+│       ├── screens/       # App screens
+│       ├── widgets/       # Reusable widgets
+│       └── theme/         # Theme configuration
+├── rust/                   # Rust native core
 │   └── src/
-│       ├── png_parser.rs  # PNG 角色卡片解析
-│       ├── charx_parser.rs # CharX 归档处理
-│       └── models.rs      # 数据模型
-├── ios/                    # iOS 平台代码
-├── android/                # Android 平台代码
-└── plans/                  # 架构文档
+│       ├── png_parser.rs  # PNG character card parsing
+│       ├── charx_parser.rs # CharX archive handling
+│       └── models.rs      # Data models
+├── ios/                    # iOS platform code
+├── android/                # Android platform code
+└── plans/                  # Architecture documentation
 ```
 
-## 开始使用
+## Getting Started
 
-### 前置要求
+### Prerequisites
 
 - Flutter SDK >= 3.16.0
-- Rust 工具链（用于原生核心）
-- Xcode（用于 iOS 开发）
-- Android Studio（用于 Android 开发）
+- Rust toolchain (for native core)
+- Xcode (for iOS development)
+- Android Studio (for Android development)
 
-### 安装
+### Installation
 
-1. **克隆仓库**
+1. **Clone the repository**
    ```bash
    git clone https://github.com/yourusername/NativeTavern.git
    cd NativeTavern
    ```
 
-2. **安装 Flutter 依赖**
+2. **Install Flutter dependencies**
    ```bash
    flutter pub get
    ```
 
-3. **构建 Rust 核心**（可选，用于原生功能）
+3. **Build Rust core** (optional, for native features)
    ```bash
    cd rust
    cargo build --release
    ```
 
-4. **运行应用**
+4. **Run the app**
    ```bash
    flutter run
    ```
 
-## SillyTavern 兼容性
+## SillyTavern Compatibility
 
-### 支持的导入格式
+### Supported Import Formats
 
-| 格式 | 描述 | 状态 |
+| Format | Description | Status |
 |--------|-------------|--------|
-| PNG V2 | 带有 `chara` tEXt 块的角色卡片 | ✅ 支持 |
-| PNG V3 | 带有 `ccv3` tEXt 块的角色卡片 | ✅ 支持 |
-| CharX | 包含 card.json + 资源的 ZIP 归档 | ✅ 支持 |
-| JSON | 原始角色 JSON 导出 | ✅ 支持 |
-| ST预设 | SillyTavern AI 预设 JSON | ✅ 支持 |
+| PNG V2 | Character card with `chara` tEXt chunk | ✅ Supported |
+| PNG V3 | Character card with `ccv3` tEXt chunk | ✅ Supported |
+| CharX | ZIP archive with card.json + assets | ✅ Supported |
+| JSON | Raw character JSON export | ✅ Supported |
+| ST Preset | SillyTavern AI preset JSON | ✅ Supported |
 
-### 支持的导出格式
+### Supported Export Formats
 
-| 格式 | 描述 | 状态 |
+| Format | Description | Status |
 |--------|-------------|--------|
-| PNG V3 | 导出为带有嵌入元数据的 PNG | ✅ 支持 |
-| CharX | 导出包含所有资源 | ✅ 支持 |
-| JSON | 原始导出用于备份 | ✅ 支持 |
+| PNG V3 | Export as PNG with embedded metadata | ✅ Supported |
+| CharX | Export with all assets | ✅ Supported |
+| JSON | Raw export for backup | ✅ Supported |
 
-## 开发阶段
+## Development Phases
 
-| 阶段 | 功能 | 状态 |
+| Phase | Features | Status |
 |-------|----------|--------|
-| **1-2** | 核心基础、聊天核心 | ✅ 完成 |
-| **3A** | 消息操作、人设、指令模式 | ✅ 完成 |
-| **3B** | 世界信息、CharX完整导入、角色编辑器 | ✅ 完成 |
-| **4A** | 群聊、聊天书签 | ✅ 完成 |
-| **4B** | 宏系统 | ✅ 完成 |
-| **5** | 作者注释、提示词管理、高级设置、快捷回复、主题、统计、思维链 | ✅ 完成 |
-| **6** | 斜杠命令、标签、背景、HTML/Markdown | ✅ 完成 |
-| **7** | 表情精灵、TTS、STT、翻译、图像生成 | ✅ 完成 |
-| **8** | 正则脚本、变量、聊天备份 | ✅ 完成 |
-| **9** | 扩展、RAG/向量 | ⏳ 计划中 |
+| **1-2** | Core Foundation, Chat Core | ✅ Complete |
+| **3A** | Message Actions, Personas, Instruct Mode | ✅ Complete |
+| **3B** | World Info, CharX Full Import, Character Editor | ✅ Complete |
+| **4A** | Group Chats, Chat Bookmarks | ✅ Complete |
+| **4B** | Macro System | ✅ Complete |
+| **5** | Author's Note, Prompt Manager, Advanced Settings, Quick Replies, Themes, Statistics, Chain of Thought | ✅ Complete |
+| **6** | Slash Commands, Tags, Backgrounds, HTML/Markdown | ✅ Complete |
+| **7** | Expression Sprites, TTS, STT, Translation, Image Generation | ✅ Complete |
+| **8** | Regex Scripts, Variables, Chat Backups | ✅ Complete |
+| **9** | Logit Bias, CFG Scale, Logprobs, Tokenizer, Vector Storage/RAG | ✅ Complete |
 
-## 与 SillyTavern 功能对比
+## Feature Comparison with SillyTavern
 
-| 功能 | SillyTavern Web | NativeTavern | 状态 |
+| Feature | SillyTavern Web | NativeTavern | Status |
 |---------|-----------------|--------------|--------|
-| 角色导入/导出 | ✅ | ✅ | 完全对等 |
-| LLM提供商 | 10+ | 6 | 核心提供商 |
-| 流式传输 | ✅ | ✅ | 完全对等 |
-| 消息操作 | ✅ | ✅ | 完全对等 |
-| 群聊 | ✅ | ✅ | 完全对等 |
-| 世界信息 | ✅ | ✅ | 完全对等 |
-| 提示词管理 | ✅ | ✅ | 完全对等 |
-| 宏 | ✅ | ✅ | 完全对等 |
-| 主题 | ✅ | ✅ | 18个内置 |
-| 斜杠命令 | ✅ | ✅ | 完全对等 |
-| 背景 | ✅ | ✅ | 完全对等 |
-| HTML/Markdown | ✅ | ✅ | 完全对等 |
-| 思维链 | ✅ | ✅ | 完全对等 |
-| 角色标签 | ✅ | ✅ | 完全对等 |
-| 推理UI | ✅ | ✅ | 完全对等 |
-| Markdown快捷键 | ✅ | ✅ | 完全对等 |
-| 表情精灵 | ✅ | ✅ | 完全对等 |
-| TTS | ✅ | ✅ | 完全对等 |
-| STT | ✅ | ✅ | 完全对等 |
-| 翻译 | ✅ | ✅ | 完全对等 |
-| 图像生成 | ✅ | ✅ | 完全对等 |
-| 正则脚本 | ✅ | ✅ | 完全对等 |
-| 变量系统 | ✅ | ✅ | 完全对等 |
-| 聊天备份 | ✅ | ✅ | 完全对等 |
-| 扩展 | ✅ | ⏳ | 计划中 |
+| Character Import/Export | ✅ | ✅ | Full parity |
+| LLM Providers | 10+ | 6 | Core providers |
+| Streaming | ✅ | ✅ | Full parity |
+| Message Actions | ✅ | ✅ | Full parity |
+| Group Chats | ✅ | ✅ | Full parity |
+| World Info | ✅ | ✅ | Full parity |
+| Prompt Manager | ✅ | ✅ | Full parity |
+| Macros | ✅ | ✅ | Full parity |
+| Themes | ✅ | ✅ | 18 built-in |
+| Slash Commands | ✅ | ✅ | Full parity |
+| Backgrounds | ✅ | ✅ | Full parity |
+| HTML/Markdown | ✅ | ✅ | Full parity |
+| Chain of Thought | ✅ | ✅ | Full parity |
+| Character Tags | ✅ | ✅ | Full parity |
+| Reasoning UI | ✅ | ✅ | Full parity |
+| Markdown Hotkeys | ✅ | ✅ | Full parity |
+| Expression Sprites | ✅ | ✅ | Full parity |
+| TTS | ✅ | ✅ | Full parity |
+| STT | ✅ | ✅ | Full parity |
+| Translation | ✅ | ✅ | Full parity |
+| Image Generation | ✅ | ✅ | Full parity |
+| Regex Scripts | ✅ | ✅ | Full parity |
+| Variables | ✅ | ✅ | Full parity |
+| Chat Backups | ✅ | ✅ | Full parity |
+| Logit Bias | ✅ | ✅ | Full parity |
+| CFG Scale | ✅ | ✅ | Full parity |
+| Token Probabilities | ✅ | ✅ | Full parity |
+| Tokenizer | ✅ | ✅ | Full parity |
+| Vector Storage/RAG | ✅ | ✅ | Full parity |
+| Extensions | ✅ | ⏳ | Planned |
 
-**总体完成度：约98%** 的核心 SillyTavern 功能
+**Overall Completion: ~99%** of core SillyTavern features
 
-## 许可证
+## License
 
-AGPL-3.0 - 详见 [LICENSE](LICENSE)。
+AGPL-3.0 - See [LICENSE](LICENSE) for details.
 
-## 致谢
+## Acknowledgments
 
-- [SillyTavern](https://github.com/SillyTavern/SillyTavern) - 原始 Web 项目
-- [Flutter](https://flutter.dev) - 跨平台 UI 框架
-- [Riverpod](https://riverpod.dev) - 状态管理
+- [SillyTavern](https://github.com/SillyTavern/SillyTavern) - Original web-based project
+- [Flutter](https://flutter.dev) - Cross-platform UI framework
+- [Riverpod](https://riverpod.dev) - State management

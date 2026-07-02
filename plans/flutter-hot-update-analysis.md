@@ -1,93 +1,93 @@
-# Flutter 移动端热更新技术方案分析
+# Flutter Mobile Hot-Update Technical Analysis
 
-## 需求背景
+## Requirement Background
 
-- **目标平台**: iOS + Android 移动端
-- **关键约束**: 需要上架 App Store
-- **使用场景**: Bug 修复和小功能更新
+- **Target platforms**: iOS + Android mobile
+- **Key constraint**: Must be published on the App Store
+- **Use case**: Bug fixes and small feature updates
 
 ---
 
-## ⚠️ 核心结论（先说结论）
+## ⚠️ Core Conclusion (Bottom Line Up Front)
 
-### Flutter 天然不支持业务代码热更新
+### Flutter does not natively support hot updates for business code
 
-这是由 **技术架构** 和 **平台政策** 双重因素决定的：
+This is determined by two combined factors: **technical architecture** and **platform policy**:
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                    Flutter 编译模式                          │
+│                    Flutter Compilation Modes                │
 ├─────────────────────────────────────────────────────────────┤
 │                                                             │
-│  开发模式 (Debug)          发布模式 (Release)                │
+│  Development Mode (Debug)   Release Mode (Release)          │
 │  ┌─────────────────┐      ┌─────────────────┐              │
-│  │   Dart VM       │      │   AOT 编译      │              │
-│  │   JIT 编译      │      │   机器码        │              │
+│  │   Dart VM       │      │   AOT Compile   │              │
+│  │   JIT Compile   │      │   Machine Code  │              │
 │  │   ↓             │      │   ↓             │              │
-│  │   支持热重载    │      │   不可替换      │              │
-│  │   (Hot Reload)  │      │   (Frozen)      │              │
+│  │   Supports Hot  │      │   Not Replace-  │              │
+│  │   Reload        │      │   able (Frozen) │              │
 │  └─────────────────┘      └─────────────────┘              │
 │                                                             │
-│  仅用于开发调试            App Store 发布的是这个版本        │
+│  Used only for dev/debug   The App Store ships this version │
 │                                                             │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-**技术原因**：
-- Flutter Release 模式使用 **AOT (Ahead-of-Time) 编译**
-- Dart 代码被编译成 **原生机器码** (`libapp.so` / `App.framework`)
-- 运行时没有 Dart VM，无法解释执行新代码
-- 这是 Flutter 追求性能的设计选择
+**Technical reasons**:
+- Flutter Release mode uses **AOT (Ahead-of-Time) compilation**
+- Dart code is compiled into **native machine code** (`libapp.so` / `App.framework`)
+- There is no Dart VM at runtime, so new code cannot be interpreted/executed
+- This is a deliberate Flutter design choice in pursuit of performance
 
-**政策原因**：
-- Apple App Store 审核指南 2.5.2 **明确禁止**下载可执行代码
-- 即使技术上能实现，也会被拒绝上架或下架
+**Policy reasons**:
+- Apple App Store Review Guideline 2.5.2 **explicitly prohibits** downloading executable code
+- Even if technically feasible, such an app risks rejection or removal from the store
 
-### 与其他技术的对比
+### Comparison with other technologies
 
-| 技术栈 | 热更新能力 | 原因 |
+| Tech Stack | Hot-Update Capability | Reason |
 |--------|-----------|------|
-| **Flutter** | ❌ 不支持 | AOT 编译成机器码 |
-| **React Native** | ⚠️ 有限 | JavaScript 可动态加载，但 App Store 限制 |
-| **原生 iOS** | ❌ 不支持 | 编译型语言 |
-| **小程序** | ✅ 支持 | 运行在宿主 App 的容器中 |
-| **Web App** | ✅ 支持 | 解释执行 |
+| **Flutter** | ❌ Not supported | AOT-compiled to machine code |
+| **React Native** | ⚠️ Limited | JavaScript can be loaded dynamically, but the App Store restricts this |
+| **Native iOS** | ❌ Not supported | Compiled language |
+| **Mini Programs** | ✅ Supported | Runs inside the host app's container |
+| **Web App** | ✅ Supported | Interpreted execution |
 
-### 为什么 React Native 的热更新（CodePush）也有风险？
+### Why does React Native's hot-update mechanism (CodePush) also carry risk?
 
-虽然 React Native 使用 JavaScript（解释型语言），理论上可以动态加载：
-- Microsoft CodePush 曾被广泛使用
-- 但 Apple 近年来加强了审查
-- 多个应用因使用 CodePush 被拒绝或下架
-- 政策执行存在不确定性
+Although React Native uses JavaScript (an interpreted language) and can theoretically load code dynamically:
+- Microsoft CodePush was widely used in the past
+- But Apple has tightened its review process in recent years
+- Multiple apps have been rejected or removed for using CodePush
+- Policy enforcement remains uncertain
 
 ---
 
-## 核心问题：App Store 政策限制
+## Core Issue: App Store Policy Restrictions
 
-### Apple App Store 审核指南 2.5.2
+### Apple App Store Review Guideline 2.5.2
 
 > "Apps must be self-contained in their bundles, and may not read or execute code that is not shipped in the approved bundle."
 
-**关键限制**:
-1. ❌ 禁止下载可执行代码（包括 Dart AOT 编译的 libapp.so）
-2. ❌ 禁止动态执行代码（如 JavaScript 核心业务逻辑）
-3. ⚠️ 例外：WebView 中的 JavaScript、JavaScriptCore（有限制）
+**Key restrictions**:
+1. ❌ Downloading executable code is prohibited (including Dart AOT-compiled libapp.so)
+2. ❌ Dynamically executing code is prohibited (e.g., JavaScript for core business logic)
+3. ⚠️ Exception: JavaScript in a WebView / JavaScriptCore (with restrictions)
 
-### Google Play 政策
+### Google Play Policy
 
-相对宽松，但也有限制：
-- 允许从 Google Play 之外加载可执行代码
-- 但要求遵守恶意软件政策
-- 动态加载的代码必须符合开发者政策
+Relatively more relaxed, but still has restrictions:
+- Loading executable code from outside Google Play is allowed
+- But it must comply with the malware policy
+- Dynamically loaded code must comply with the developer policy
 
 ---
 
-## 技术方案评估
+## Technical Options Evaluation
 
-### 方案一：Shorebird（官方推荐）
+### Option 1: Shorebird (Officially Recommended)
 
-**原理**: 差分更新 Dart AOT 代码
+**Principle**: Delta updates of Dart AOT code
 
 ```
 ┌─────────────────┐     ┌─────────────────┐
@@ -106,29 +106,29 @@
          └───────────────────────┘
 ```
 
-**优点**:
-- ✅ Flutter 官方合作伙伴
-- ✅ 无需重新上架即可更新 Dart 代码
-- ✅ 支持 iOS 和 Android
-- ✅ 差分更新，补丁体积小
+**Pros**:
+- ✅ Official Flutter partner
+- ✅ Can update Dart code without resubmitting to the store
+- ✅ Supports both iOS and Android
+- ✅ Delta updates, small patch size
 
-**缺点**:
-- ⚠️ 订阅制收费（免费版有限制）
-- ⚠️ iOS App Store 政策灰色地带
-- ❌ 不能更新原生代码（Swift/Kotlin）
-- ❌ 不能添加新的原生依赖
+**Cons**:
+- ⚠️ Subscription-based pricing (free tier has limitations)
+- ⚠️ Sits in a gray area of iOS App Store policy
+- ❌ Cannot update native code (Swift/Kotlin)
+- ❌ Cannot add new native dependencies
 
-**App Store 合规性**: ⚠️ **存在风险**
-- Shorebird 声称通过"解释"而非"执行"新代码来规避政策
-- 但苹果随时可能改变解释或加强审查
-- 已有应用因使用类似技术被拒的案例
+**App Store compliance**: ⚠️ **Carries risk**
+- Shorebird claims to work around the policy by "interpreting" rather than "executing" new code
+- But Apple could change its interpretation or tighten review at any time
+- There are already cases of apps being rejected for using similar techniques
 
-### 方案二：动态配置/远程配置
+### Option 2: Dynamic/Remote Configuration
 
-**原理**: 通过服务端下发配置来控制应用行为
+**Principle**: Control app behavior via server-delivered configuration
 
 ```dart
-// 示例：远程配置控制功能开关
+// Example: remote config controlling a feature toggle
 class RemoteConfig {
   static Future<Map<String, dynamic>> fetchConfig() async {
     final response = await dio.get('https://api.example.com/config');
@@ -136,7 +136,7 @@ class RemoteConfig {
   }
 }
 
-// 使用配置控制UI显示
+// Use config to control UI display
 Widget build(BuildContext context) {
   final config = ref.watch(remoteConfigProvider);
   
@@ -147,32 +147,32 @@ Widget build(BuildContext context) {
 }
 ```
 
-**适用场景**:
-- ✅ 功能开关（Feature Flags）
-- ✅ A/B 测试
-- ✅ 文案/图片/配置更新
-- ✅ API 端点切换
-- ✅ 业务规则参数调整
+**Applicable scenarios**:
+- ✅ Feature flags
+- ✅ A/B testing
+- ✅ Copy/image/config updates
+- ✅ API endpoint switching
+- ✅ Business rule parameter tuning
 
-**优点**:
-- ✅ 完全符合 App Store 政策
-- ✅ 无额外成本（自建或用 Firebase）
-- ✅ 实时生效
+**Pros**:
+- ✅ Fully compliant with App Store policy
+- ✅ No additional cost (self-hosted or via Firebase)
+- ✅ Takes effect in real time
 
-**缺点**:
-- ❌ 不能修复代码 Bug
-- ❌ 不能添加新功能逻辑
-- ❌ 需要预先在代码中埋点
+**Cons**:
+- ❌ Cannot fix code bugs
+- ❌ Cannot add new feature logic
+- ❌ Requires instrumentation to be added in advance in the code
 
-**推荐工具**:
+**Recommended tools**:
 - Firebase Remote Config
 - LaunchDarkly
 - ConfigCat
-- 自建配置服务
+- A self-hosted configuration service
 
-### 方案三：WebView 混合架构
+### Option 3: WebView Hybrid Architecture
 
-**原理**: 将部分业务逻辑放在 WebView 中，通过 H5 热更新
+**Principle**: Put part of the business logic in a WebView so it can be hot-updated via H5
 
 ```
 ┌─────────────────────────────────────────┐
@@ -191,25 +191,25 @@ Widget build(BuildContext context) {
 └─────────────────────────────────────────┘
 ```
 
-**适用场景**:
-- ✅ 活动页面
-- ✅ 运营配置页面
-- ✅ 频繁变更的业务模块
+**Applicable scenarios**:
+- ✅ Campaign/event pages
+- ✅ Operations configuration pages
+- ✅ Frequently changing business modules
 
-**优点**:
-- ✅ 完全符合 App Store 政策
-- ✅ 真正的代码热更新
-- ✅ 可以修复 Bug 和添加功能
+**Pros**:
+- ✅ Fully compliant with App Store policy
+- ✅ True code hot-updating
+- ✅ Can fix bugs and add features
 
-**缺点**:
-- ❌ 性能不如原生
-- ❌ 需要维护两套技术栈
-- ❌ 交互体验可能不一致
-- ❌ 不适合核心功能
+**Cons**:
+- ❌ Performance is worse than native
+- ❌ Requires maintaining two separate tech stacks
+- ❌ Interaction experience may be inconsistent
+- ❌ Not suitable for core functionality
 
-### 方案四：模块化 + 插件动态下载（仅 Android）
+### Option 4: Modularization + Dynamic Plugin Download (Android Only)
 
-**原理**: 使用 Android Dynamic Feature Modules
+**Principle**: Use Android Dynamic Feature Modules
 
 ```kotlin
 // Android Dynamic Feature
@@ -220,18 +220,18 @@ val request = SplitInstallRequest.newBuilder()
 splitInstallManager.startInstall(request)
 ```
 
-**优点**:
-- ✅ Google Play 官方支持
-- ✅ 可以动态下载模块
+**Pros**:
+- ✅ Officially supported by Google Play
+- ✅ Modules can be downloaded dynamically
 
-**缺点**:
-- ❌ 仅 Android 可用
-- ❌ iOS 不支持
-- ❌ Flutter 集成复杂
+**Cons**:
+- ❌ Android only
+- ❌ Not supported on iOS
+- ❌ Complex to integrate with Flutter
 
-### 方案五：服务端驱动 UI（Server-Driven UI）
+### Option 5: Server-Driven UI
 
-**原理**: UI 结构由服务端下发 JSON 描述
+**Principle**: The UI structure is delivered by the server as a JSON description
 
 ```json
 {
@@ -252,7 +252,7 @@ splitInstallManager.startInstall(request)
 ```
 
 ```dart
-// Flutter 端解析并渲染
+// Flutter side parses and renders the JSON
 Widget buildFromJson(Map<String, dynamic> json) {
   switch (json['type']) {
     case 'column':
@@ -268,33 +268,33 @@ Widget buildFromJson(Map<String, dynamic> json) {
         onPressed: () => handleAction(json['action']),
         child: Text(json['label']),
       );
-    // ... 更多组件
+    // ... more components
   }
 }
 ```
 
-**优点**:
-- ✅ 符合 App Store 政策
-- ✅ 可以动态调整 UI 布局
-- ✅ 无需发版即可上线新页面
+**Pros**:
+- ✅ Compliant with App Store policy
+- ✅ UI layout can be adjusted dynamically
+- ✅ New pages can go live without a release
 
-**缺点**:
-- ⚠️ 实现复杂度高
-- ⚠️ 需要定义完整的组件库
-- ❌ 不能添加新的原生交互
-- ❌ 调试困难
+**Cons**:
+- ⚠️ High implementation complexity
+- ⚠️ Requires defining a complete component library
+- ❌ Cannot add new native interactions
+- ❌ Difficult to debug
 
-**成熟方案**:
-- Airbnb 的 Lona
-- Shopify 的 Hydrogen
+**Mature implementations**:
+- Airbnb's Lona
+- Shopify's Hydrogen
 
 ---
 
-## 针对 NativeTavern 的推荐方案
+## Recommendation for NativeTavern
 
-基于项目特点（AI 聊天应用，核心功能相对稳定），推荐采用**组合策略**：
+Based on the project's characteristics (an AI chat app whose core functionality is relatively stable), a **combined strategy** is recommended:
 
-### 层级 1：远程配置（解决 80% 问题）
+### Tier 1: Remote Configuration (solves 80% of the problem)
 
 ```dart
 // lib/core/services/remote_config_service.dart
@@ -321,40 +321,40 @@ class AppConfig with _$AppConfig {
 }
 ```
 
-**可热更新的内容**:
-- 支持的 LLM 模型列表
-- API 端点配置
-- 功能开关
-- 错误提示文案
-- 默认参数值
+**Content that can be hot-updated**:
+- List of supported LLM models
+- API endpoint configuration
+- Feature flags
+- Error message copy
+- Default parameter values
 
-### 层级 2：动态资源更新
+### Tier 2: Dynamic Resource Updates
 
 ```dart
-// 动态下载和缓存资源
+// Dynamically download and cache resources
 class DynamicResourceService {
   Future<void> updateResources() async {
-    // 下载新的提示词模板
+    // Download new prompt templates
     await downloadPromptTemplates();
-    // 下载新的角色卡
+    // Download new character presets
     await downloadCharacterPresets();
-    // 下载新的主题配置
+    // Download new theme configurations
     await downloadThemeConfigs();
   }
 }
 ```
 
-**可热更新的资源**:
-- 预设角色卡
-- 提示词模板
-- 主题配置
-- 正则脚本
-- World Info 模板
+**Resources that can be hot-updated**:
+- Preset character cards
+- Prompt templates
+- Theme configurations
+- Regex scripts
+- World Info templates
 
-### 层级 3：强制更新提示
+### Tier 3: Forced Update Prompt
 
 ```dart
-// 当有重大 Bug 需要修复时
+// When a major bug needs fixing
 class UpdateCheckService {
   Future<void> checkForUpdates() async {
     final config = await remoteConfig.fetchConfig();
@@ -370,51 +370,51 @@ class UpdateCheckService {
 }
 ```
 
-### 层级 4：考虑 Shorebird（可选）
+### Tier 4: Consider Shorebird (Optional)
 
-如果业务需要频繁修复 Dart 代码 Bug，可以评估 Shorebird：
+If the business genuinely needs frequent Dart code bug fixes, Shorebird can be evaluated:
 
 ```bash
-# 安装 Shorebird
+# Install Shorebird
 curl --proto '=https' --tlsv1.2 https://raw.githubusercontent.com/shorebirdtech/install/main/install.sh -sSf | bash
 
-# 初始化项目
+# Initialize the project
 shorebird init
 
-# 发布补丁
+# Publish a patch
 shorebird patch --platform ios
 shorebird patch --platform android
 ```
 
-**风险评估**:
-- 目前大量应用使用，尚未有大规模下架报告
-- 但政策风险始终存在
-- 建议作为辅助手段，不要过度依赖
+**Risk assessment**:
+- Currently used by a large number of apps, with no large-scale removal reports so far
+- But policy risk always exists
+- Recommended only as a supplementary measure — do not over-rely on it
 
 ---
 
-## 实施建议
+## Implementation Recommendations
 
-### 阶段一：基础设施搭建
+### Phase 1: Infrastructure Setup
 
-1. **搭建配置服务**
-   - 使用 Firebase Remote Config 或自建服务
-   - 设计配置数据结构
-   - 实现客户端获取和缓存逻辑
+1. **Build the configuration service**
+   - Use Firebase Remote Config or a self-hosted service
+   - Design the configuration data structure
+   - Implement client-side fetching and caching logic
 
-2. **实现版本检查**
-   - 强制更新逻辑
-   - 可选更新提示
-   - App Store/Google Play 跳转
+2. **Implement version checking**
+   - Forced-update logic
+   - Optional-update prompt
+   - App Store/Google Play redirect
 
-3. **动态资源系统**
-   - 资源版本管理
-   - 增量下载
-   - 本地缓存
+3. **Dynamic resource system**
+   - Resource version management
+   - Incremental downloads
+   - Local caching
 
-### 阶段二：代码预埋点
+### Phase 2: Instrument the Code in Advance
 
-1. **功能开关埋点**
+1. **Feature flag instrumentation**
    ```dart
    if (remoteConfig.isFeatureEnabled('new_chat_ui')) {
      return NewChatScreen();
@@ -422,52 +422,52 @@ shorebird patch --platform android
    return ChatScreen();
    ```
 
-2. **参数外置**
+2. **Externalize parameters**
    ```dart
    final defaultTemperature = remoteConfig.getDouble('default_temperature', 0.8);
    ```
 
-3. **错误处理可配置**
+3. **Make error handling configurable**
    ```dart
    final errorMessage = remoteConfig.getString('api_error_message', 'An error occurred');
    ```
 
-### 阶段三：评估 Shorebird（可选）
+### Phase 3: Evaluate Shorebird (Optional)
 
-1. 小范围测试
-2. 监控审核结果
-3. 建立回滚机制
+1. Small-scale testing
+2. Monitor review outcomes
+3. Establish a rollback mechanism
 
 ---
 
-## 技术对比总结
+## Technical Comparison Summary
 
-| 方案 | App Store 合规 | Bug 修复 | 新功能 | 实现难度 | 成本 |
+| Option | App Store Compliant | Bug Fixes | New Features | Implementation Difficulty | Cost |
 |------|---------------|----------|--------|----------|------|
-| Shorebird | ⚠️ 灰色地带 | ✅ | ⚠️ 有限 | 低 | 付费 |
-| 远程配置 | ✅ | ❌ | ⚠️ 开关 | 低 | 低/免费 |
-| WebView 混合 | ✅ | ✅ 部分 | ✅ 部分 | 高 | 中 |
-| Server-Driven UI | ✅ | ⚠️ UI层 | ⚠️ UI层 | 很高 | 高 |
-| 强制更新 | ✅ | ✅ | ✅ | 低 | 低 |
+| Shorebird | ⚠️ Gray area | ✅ | ⚠️ Limited | Low | Paid |
+| Remote Config | ✅ | ❌ | ⚠️ Toggle only | Low | Low/Free |
+| WebView Hybrid | ✅ | ✅ Partial | ✅ Partial | High | Medium |
+| Server-Driven UI | ✅ | ⚠️ UI layer only | ⚠️ UI layer only | Very high | High |
+| Forced Update | ✅ | ✅ | ✅ | Low | Low |
 
 ---
 
-## 最终建议
+## Final Recommendation
 
-对于 NativeTavern 项目，建议采用以下策略：
+For the NativeTavern project, the following strategy is recommended:
 
-1. **短期（立即可做）**:
-   - 实现远程配置系统
-   - 实现版本检查和更新提示
-   - 将可配置项外置
+1. **Short term (can be done immediately)**:
+   - Implement the remote configuration system
+   - Implement version checking and update prompts
+   - Externalize configurable items
 
-2. **中期（1-2个月）**:
-   - 建立动态资源更新系统
-   - 在代码中埋入功能开关
-   - 评估是否引入 Shorebird
+2. **Medium term (1-2 months)**:
+   - Build the dynamic resource update system
+   - Instrument feature flags in the code
+   - Evaluate whether to introduce Shorebird
 
-3. **长期（根据需求）**:
-   - 如果确实需要频繁更新业务逻辑，考虑将特定模块用 WebView 实现
-   - 持续关注 Flutter/Shorebird 的政策变化
+3. **Long term (as needed)**:
+   - If frequent business logic updates are genuinely required, consider implementing specific modules with a WebView
+   - Continuously monitor policy changes for Flutter/Shorebird
 
-**核心原则**: 优先保证 App Store 合规性，在此基础上最大化灵活性。
+**Core principle**: Prioritize App Store compliance, and maximize flexibility on top of that foundation.
