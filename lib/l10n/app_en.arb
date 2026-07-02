@@ -5768,6 +5768,36 @@
   "@branchFromHere": {
     "description": "Branch from here tooltip"
   },
+
+  "branchOf": "Branch of {title}",
+  "@branchOf": {
+    "description": "Title for a chat branched from another chat",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+
+  "regenerateBranchDescription": "Branches to a new chat and regenerates",
+  "@regenerateBranchDescription": {
+    "description": "Subtitle for regenerating a message that is not the most recent"
+  },
+
+  "branchCreated": "Branched to a new chat",
+  "@branchCreated": {
+    "description": "Snackbar shown after a branch chat is created"
+  },
+
+  "continueFromHereDescription": "Generates the next response",
+  "@continueFromHereDescription": {
+    "description": "Subtitle for continue from here on the most recent message"
+  },
+
+  "continueFromHereTruncateDescription": "Deletes later messages and generates the next response",
+  "@continueFromHereTruncateDescription": {
+    "description": "Subtitle for continue from here on an earlier message"
+  },
   
   "previewBookmark": "Preview: {name}",
   "@previewBookmark": {
@@ -6211,5 +6241,44 @@
   "bubbleOpacityHelp": "Controls the transparency of message bubbles when a background is active.",
   "@bubbleOpacityHelp": {
     "description": "Helper text for message bubble opacity slider"
+  },
+
+  "bulkImportTitle": "Bulk import (ST zip)",
+  "@bulkImportTitle": {
+    "description": "Title of the SillyTavern library bulk import dialog"
+  },
+
+  "bulkImportDescription": "Import a SillyTavern library zip created with the st_export.py tool. Cards that were already imported are skipped automatically.",
+  "@bulkImportDescription": {
+    "description": "Explanation shown before starting a bulk import"
+  },
+
+  "bulkImportChooseZip": "Choose zip file",
+  "@bulkImportChooseZip": {
+    "description": "Button that opens the zip file picker for bulk import"
+  },
+
+  "bulkImportProgressLabel": "{processed} / {total} processed",
+  "@bulkImportProgressLabel": {
+    "description": "Bulk import progress counter",
+    "placeholders": {
+      "processed": {"type": "int"},
+      "total": {"type": "int"}
+    }
+  },
+
+  "bulkImportSummary": "Imported {imported}, skipped {skipped} duplicates, {failed} failed",
+  "@bulkImportSummary": {
+    "description": "Bulk import result summary",
+    "placeholders": {
+      "imported": {"type": "int"},
+      "skipped": {"type": "int"},
+      "failed": {"type": "int"}
+    }
+  },
+
+  "bulkImportFailedFiles": "Failed files:",
+  "@bulkImportFailedFiles": {
+    "description": "Header above the list of files that failed to import"
   }
 }

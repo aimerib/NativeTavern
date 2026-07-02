@@ -116,6 +116,48 @@ class CharacterRepository {
     return newCharacter;
   }
 
+  /// Get the content hashes of all characters imported with one (for dedupe)
+  Future<Set<String>> getAllContentHashes() async {
+    final query = _db.selectOnly(_db.characters)
+      ..addColumns([_db.characters.sha256])
+      ..where(_db.characters.sha256.isNotNull());
+    final rows = await query.get();
+    return rows.map((r) => r.read(_db.characters.sha256)).whereType<String>().toSet();
+  }
+
+  /// Bulk-insert pre-parsed characters in a single transaction.
+  /// [sha256ById] stores each card file's content hash for dedupe on re-import;
+  /// [tagIdsById] links characters to existing tag ids.
+  /// A failing character is skipped without aborting the rest of the batch;
+  /// returns the ids that failed to insert.
+  Future<List<String>> createCharactersBatch(
+    List<models.Character> characters, {
+    Map<String, String> sha256ById = const {},
+    Map<String, List<String>> tagIdsById = const {},
+  }) async {
+    final failedIds = <String>[];
+    await _db.transaction(() async {
+      for (final character in characters) {
+        try {
+          final companion = _characterToCompanion(character)
+              .copyWith(sha256: Value(sha256ById[character.id]));
+          await _db.into(_db.characters).insert(companion);
+          for (final tagId in tagIdsById[character.id] ?? const <String>[]) {
+            await _db.into(_db.characterTags).insertOnConflictUpdate(
+                  CharacterTagsCompanion.insert(
+                    characterId: character.id,
+                    tagId: tagId,
+                  ),
+                );
+          }
+        } catch (_) {
+          failedIds.add(character.id);
+        }
+      }
+    });
+    return failedIds;
+  }
+
   /// Update an existing character
   Future<models.Character> updateCharacter(models.Character character) async {
     final updatedCharacter = character.copyWith(modifiedAt: DateTime.now());

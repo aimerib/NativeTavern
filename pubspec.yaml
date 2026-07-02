@@ -40,6 +40,9 @@ dependencies:
   
   # Archive Handling
   archive: ^3.4.9
+
+  # Hashing
+  crypto: ^3.0.3
   
   # Code Generation (Runtime)
   freezed_annotation: ^2.4.1

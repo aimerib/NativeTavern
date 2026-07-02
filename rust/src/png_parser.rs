@@ -3,8 +3,8 @@
 //! Parses PNG files with embedded character card metadata in tEXt chunks.
 //! Supports both V2 (chara) and V3 (ccv3) specifications.
 
-use std::io::{Read, Write, Cursor};
-use png::{Decoder, Encoder, ColorType, BitDepth};
+use std::io::Cursor;
+use png::{Decoder, Encoder};
 use base64::{Engine as _, engine::general_purpose::STANDARD as BASE64};
 use crate::error::{CoreError, Result};
 use crate::models::{CharacterCardData, CharacterCardSpec, ParsedCharacterCard};

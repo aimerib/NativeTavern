@@ -382,12 +382,26 @@ class _MessageContentWidgetState extends State<MessageContentWidget> {
 
   Widget _buildMarkdownContent(BuildContext context, String content) {
     final effectiveFontSize = widget.fontSize ?? 14.0;
-    
+
+    final markdown = _buildMarkdownBody(context, content, effectiveFontSize);
+
+    // SelectionArea claims the long-press gesture for text selection, which
+    // would prevent onLongPress (message options) from firing over text.
+    if (!widget.selectable) {
+      return markdown;
+    }
+
     return SelectionArea(
       onSelectionChanged: (selection) {
         _selectedText = selection?.plainText;
       },
-      child: MarkdownBody(
+      child: markdown,
+    );
+  }
+
+  Widget _buildMarkdownBody(
+      BuildContext context, String content, double effectiveFontSize) {
+    return MarkdownBody(
         data: content,
         selectable: false, // Must be false when wrapped in SelectionArea to avoid conflict
         shrinkWrap: true,
@@ -522,8 +536,7 @@ class _MessageContentWidgetState extends State<MessageContentWidget> {
             _launchUrl(href);
           }
         },
-      ),
-    );
+      );
   }
 
   Widget _buildPlainText(BuildContext context) {

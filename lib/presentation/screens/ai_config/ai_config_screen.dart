@@ -295,6 +295,8 @@ class _LLMProviderTile extends ConsumerWidget {
         return 'Ollama (Local)';
       case LLMProvider.koboldCpp:
         return 'KoboldCpp (Local)';
+      case LLMProvider.llamaCpp:
+        return 'llama.cpp (Local)';
       case LLMProvider.deepSeek:
         return 'DeepSeek';
       case LLMProvider.qwen:
@@ -399,6 +401,8 @@ class _LLMProviderTile extends ConsumerWidget {
         return 'Local models';
       case LLMProvider.koboldCpp:
         return 'GGUF models';
+      case LLMProvider.llamaCpp:
+        return 'llama-server (GGUF models)';
       case LLMProvider.deepSeek:
         return 'DeepSeek V3.2, DeepSeek R1';
       case LLMProvider.qwen:

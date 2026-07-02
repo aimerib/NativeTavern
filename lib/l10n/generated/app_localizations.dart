@@ -6178,6 +6178,36 @@ abstract class AppLocalizations {
   /// **'Branch from here'**
   String get branchFromHere;
 
+  /// Title for a chat branched from another chat
+  ///
+  /// In en, this message translates to:
+  /// **'Branch of {title}'**
+  String branchOf(String title);
+
+  /// Subtitle for regenerating a message that is not the most recent
+  ///
+  /// In en, this message translates to:
+  /// **'Branches to a new chat and regenerates'**
+  String get regenerateBranchDescription;
+
+  /// Snackbar shown after a branch chat is created
+  ///
+  /// In en, this message translates to:
+  /// **'Branched to a new chat'**
+  String get branchCreated;
+
+  /// Subtitle for continue from here on the most recent message
+  ///
+  /// In en, this message translates to:
+  /// **'Generates the next response'**
+  String get continueFromHereDescription;
+
+  /// Subtitle for continue from here on an earlier message
+  ///
+  /// In en, this message translates to:
+  /// **'Deletes later messages and generates the next response'**
+  String get continueFromHereTruncateDescription;
+
   /// Preview bookmark title
   ///
   /// In en, this message translates to:
@@ -6651,6 +6681,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Controls the transparency of message bubbles when a background is active.'**
   String get bubbleOpacityHelp;
+
+  /// Title of the SillyTavern library bulk import dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Bulk import (ST zip)'**
+  String get bulkImportTitle;
+
+  /// Explanation shown before starting a bulk import
+  ///
+  /// In en, this message translates to:
+  /// **'Import a SillyTavern library zip created with the st_export.py tool. Cards that were already imported are skipped automatically.'**
+  String get bulkImportDescription;
+
+  /// Button that opens the zip file picker for bulk import
+  ///
+  /// In en, this message translates to:
+  /// **'Choose zip file'**
+  String get bulkImportChooseZip;
+
+  /// Bulk import progress counter
+  ///
+  /// In en, this message translates to:
+  /// **'{processed} / {total} processed'**
+  String bulkImportProgressLabel(int processed, int total);
+
+  /// Bulk import result summary
+  ///
+  /// In en, this message translates to:
+  /// **'Imported {imported}, skipped {skipped} duplicates, {failed} failed'**
+  String bulkImportSummary(int imported, int skipped, int failed);
+
+  /// Header above the list of files that failed to import
+  ///
+  /// In en, this message translates to:
+  /// **'Failed files:'**
+  String get bulkImportFailedFiles;
 }
 
 class _AppLocalizationsDelegate

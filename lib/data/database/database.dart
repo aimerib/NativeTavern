@@ -27,6 +27,7 @@ class Characters extends Table {
   TextColumn get characterBookJson => text().withDefault(const Constant(''))(); // JSON for embedded lorebook
   TextColumn get extensionsJson => text().withDefault(const Constant('{}'))(); // JSON
   BoolColumn get isFavorite => boolean().withDefault(const Constant(false))(); // Favorite flag
+  TextColumn get sha256 => text().nullable()(); // Content hash of the imported card file, for dedupe
   DateTimeColumn get createdAt => dateTime()();
   DateTimeColumn get modifiedAt => dateTime()();
 
@@ -233,8 +234,11 @@ class GlobalStates extends Table {
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
+  /// For tests: run against an arbitrary executor (e.g. NativeDatabase.memory())
+  AppDatabase.forTesting(super.e);
+
   @override
-  int get schemaVersion => 13;
+  int get schemaVersion => 14;
 
   @override
   MigrationStrategy get migration {
@@ -306,6 +310,10 @@ class AppDatabase extends _$AppDatabase {
         if (from < 13) {
           // Add GlobalStates table for settings persistence
           await m.createTable(globalStates);
+        }
+        if (from < 14) {
+          // Add content hash to characters for import dedupe
+          await m.addColumn(characters, characters.sha256);
         }
       },
     );

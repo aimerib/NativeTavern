@@ -6,6 +6,14 @@ import 'package:native_tavern/data/models/character.dart';
 import 'package:native_tavern/core/utils/path_utils.dart';
 import 'package:path/path.dart' as p;
 
+/// A character card parsed from a .charx archive, without filesystem access
+class CharXCard {
+  final Character character;
+  final Uint8List? avatarBytes;
+
+  const CharXCard(this.character, this.avatarBytes);
+}
+
 /// Service for importing and exporting character cards
 class ImportService {
   final String _dataPath;
@@ -21,6 +29,19 @@ class ImportService {
 
   /// Import character from PNG bytes (extracts embedded JSON from tEXt chunk)
   Future<Character> importFromPngBytes(Uint8List bytes) async {
+    final character = parsePngCard(bytes);
+
+    // Save the avatar
+    final avatarPath = await _saveAvatar(character.id, bytes);
+
+    return character.copyWith(
+      assets: CharacterAssets(avatarPath: avatarPath),
+    );
+  }
+
+  /// Parse a character from PNG bytes without saving anything.
+  /// Static and free of platform channels, so it is safe to call in an isolate.
+  static Character parsePngCard(Uint8List bytes) {
     // Extract character data from PNG tEXt chunk
     final json = _extractPngTextChunk(bytes, 'chara');
     if (json == null) {
@@ -31,29 +52,37 @@ class ImportService {
     final decoded = utf8.decode(base64Decode(json));
     final data = jsonDecode(decoded) as Map<String, dynamic>;
 
-    // Parse character from JSON
-    final character = _parseCharacterJson(data);
-
-    // Save the avatar
-    final avatarPath = await _saveAvatar(character.id, bytes);
-
-    return character.copyWith(
-      assets: CharacterAssets(avatarPath: avatarPath),
-    );
+    return _parseCharacterJson(data);
   }
 
   /// Import character from CharX archive
   Future<Character> importFromCharX(String filePath) async {
     final file = File(filePath);
     final bytes = await file.readAsBytes();
-    
+
+    final parsed = parseCharXCard(bytes);
+
+    // Save avatar if found
+    String? avatarPath;
+    if (parsed.avatarBytes != null) {
+      avatarPath = await _saveAvatar(parsed.character.id, parsed.avatarBytes!);
+    }
+
+    return parsed.character.copyWith(
+      assets: avatarPath != null ? CharacterAssets(avatarPath: avatarPath) : null,
+    );
+  }
+
+  /// Parse a character (and avatar bytes) from CharX archive bytes without
+  /// saving anything. Static and isolate-safe.
+  static CharXCard parseCharXCard(Uint8List bytes) {
     // Extract archive
     final archive = ZipDecoder().decodeBytes(bytes);
-    
+
     // Find card.json
     ArchiveFile? cardFile;
     ArchiveFile? avatarFile;
-    
+
     for (final file in archive) {
       if (file.name == 'card.json') {
         cardFile = file;
@@ -61,26 +90,20 @@ class ImportService {
         avatarFile = file;
       }
     }
-    
+
     if (cardFile == null) {
       throw Exception('No card.json found in CharX archive');
     }
-    
+
     // Parse JSON
     final json = utf8.decode(cardFile.content as List<int>);
     final data = jsonDecode(json) as Map<String, dynamic>;
-    
-    // Parse character
+
     final character = _parseCharacterJson(data);
-    
-    // Save avatar if found
-    String? avatarPath;
-    if (avatarFile != null) {
-      avatarPath = await _saveAvatar(character.id, Uint8List.fromList(avatarFile.content as List<int>));
-    }
-    
-    return character.copyWith(
-      assets: avatarPath != null ? CharacterAssets(avatarPath: avatarPath) : null,
+
+    return CharXCard(
+      character,
+      avatarFile != null ? Uint8List.fromList(avatarFile.content as List<int>) : null,
     );
   }
 
@@ -148,8 +171,8 @@ class ImportService {
   }
 
   // Private methods
-  
-  Character _parseCharacterJson(Map<String, dynamic> json) {
+
+  static Character _parseCharacterJson(Map<String, dynamic> json) {
     String name = '';
     String description = '';
     String personality = '';
@@ -249,7 +272,7 @@ class ImportService {
     );
   }
 
-  CharacterBook _parseCharacterBook(Map<String, dynamic> json) {
+  static CharacterBook _parseCharacterBook(Map<String, dynamic> json) {
     final entriesJson = json['entries'] as List<dynamic>? ?? [];
     final entries = entriesJson.map((e) {
       final entry = e as Map<String, dynamic>;
@@ -283,7 +306,7 @@ class ImportService {
   }
 
   /// Safely parse an int from dynamic value (handles both int and string)
-  int? _parseIntSafe(dynamic value) {
+  static int? _parseIntSafe(dynamic value) {
     if (value == null) return null;
     if (value is int) return value;
     if (value is String) return int.tryParse(value);
@@ -292,7 +315,7 @@ class ImportService {
   }
 
   /// Safely parse a bool from dynamic value (handles bool, int, and string)
-  bool? _parseBoolSafe(dynamic value) {
+  static bool? _parseBoolSafe(dynamic value) {
     if (value == null) return null;
     if (value is bool) return value;
     if (value is int) return value != 0;
@@ -305,7 +328,7 @@ class ImportService {
   }
 
   /// Safely parse a list of strings from dynamic value
-  List<String> _parseStringList(dynamic value) {
+  static List<String> _parseStringList(dynamic value) {
     if (value == null) return [];
     if (value is List) {
       return value.map((e) => e?.toString() ?? '').where((s) => s.isNotEmpty).toList();
@@ -383,13 +406,13 @@ class ImportService {
     return await PathUtils.toRelativePath(avatarPath);
   }
 
-  String _generateId() {
+  static String _generateId() {
     return DateTime.now().millisecondsSinceEpoch.toString() + 
            (DateTime.now().microsecond % 1000).toString().padLeft(3, '0');
   }
 
   /// Extract text chunk from PNG
-  String? _extractPngTextChunk(Uint8List bytes, String keyword) {
+  static String? _extractPngTextChunk(Uint8List bytes, String keyword) {
     // PNG signature is 8 bytes
     if (bytes.length < 8) return null;
     

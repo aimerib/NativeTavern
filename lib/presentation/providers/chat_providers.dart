@@ -785,8 +785,12 @@ class ActiveChatNotifier extends StateNotifier<ActiveChatState> {
     }
   }
 
-  /// Continue from a specific message (delete all after and regenerate)
+  /// Continue from a specific message: delete all messages after it, then
+  /// generate the next response at that point (a reply to a user message,
+  /// or a follow-up when the message is from the assistant).
   Future<void> continueFromMessage(String messageId, LLMConfig config) async {
+    if (state.isGenerating) return;
+
     final messageIndex = state.messages.indexWhere((m) => m.id == messageId);
     if (messageIndex < 0) return;
 
@@ -801,11 +805,8 @@ class ActiveChatNotifier extends StateNotifier<ActiveChatState> {
       );
     }
 
-    // If the message is from user, generate assistant response
-    final message = state.messages[messageIndex];
-    if (message.role == MessageRole.user) {
-      await _generateAssistantResponse(config);
-    }
+    // Generate the next response (handles both single and group chats)
+    await continueGeneration(config);
   }
 
   /// Continue generation without user message (for "Continue" quick reply)
@@ -2090,6 +2091,87 @@ class ActiveChatNotifier extends StateNotifier<ActiveChatState> {
         messages: state.messages.sublist(0, messageIndex + 1),
       );
     }
+  }
+
+  /// Branch the chat at a message: create a new chat containing copies of
+  /// all messages up to and including [messageId], and switch to it.
+  /// The original chat is left untouched. Returns the new chat ID.
+  Future<String?> branchAtMessage(String messageId, {String? title}) async {
+    final chat = state.chat;
+    if (chat == null) return null;
+
+    final messageIndex = state.messages.indexWhere((m) => m.id == messageId);
+    if (messageIndex < 0) return null;
+
+    try {
+      final now = DateTime.now();
+      final newChat = chat.copyWith(
+        id: _generateId(),
+        title: title ?? 'Branch: ${chat.title}',
+        // Only keep summaries that cover messages included in the branch
+        summaries: chat.summaries
+            .where((s) => s.endMessageIndex <= messageIndex)
+            .toList(),
+        createdAt: now,
+        updatedAt: now,
+      );
+      await _chatRepository.createChat(newChat);
+
+      final copiedMessages = <ChatMessage>[];
+      final sourceMessages = state.messages.sublist(0, messageIndex + 1);
+      for (var i = 0; i < sourceMessages.length; i++) {
+        final copy = sourceMessages[i].copyWith(
+          id: '${_generateId()}$i',
+          chatId: newChat.id,
+        );
+        await _chatRepository.addMessage(copy);
+        copiedMessages.add(copy);
+      }
+
+      state = state.copyWith(
+        chat: newChat,
+        messages: copiedMessages,
+      );
+      _ref.read(activeChatIdProvider.notifier).state = newChat.id;
+      return newChat.id;
+    } catch (e, stackTrace) {
+      debugPrint('❌ ChatProvider branchAtMessage error: $e\n$stackTrace');
+      state = state.copyWith(error: e.toString());
+      return null;
+    }
+  }
+
+  /// Regenerate from an arbitrary message.
+  /// - If the message is the most recent one, regenerates in place
+  ///   (assistant: new swipe; user: generates the response).
+  /// - Otherwise, branches to a new chat at that message first, so the
+  ///   original conversation is preserved.
+  /// Generation is kicked off but not awaited, so callers can navigate to
+  /// the branched chat immediately. Returns the new chat ID when a branch
+  /// was created, null otherwise.
+  Future<String?> regenerateFromMessage(
+    String messageId,
+    LLMConfig config, {
+    String? branchTitle,
+  }) async {
+    if (state.isGenerating) return null;
+
+    final messageIndex = state.messages.indexWhere((m) => m.id == messageId);
+    if (messageIndex < 0) return null;
+
+    String? newChatId;
+    if (messageIndex != state.messages.length - 1) {
+      newChatId = await branchAtMessage(messageId, title: branchTitle);
+      if (newChatId == null) return null;
+    }
+
+    final target = state.messages.last;
+    if (target.role == MessageRole.assistant) {
+      unawaited(regenerateMessage(target.id, config));
+    } else {
+      unawaited(continueGeneration(config));
+    }
+    return newChatId;
   }
 
   /// Get preview of messages up to a bookmark point

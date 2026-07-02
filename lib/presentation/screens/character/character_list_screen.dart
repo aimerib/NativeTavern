@@ -9,6 +9,7 @@ import 'package:native_tavern/presentation/providers/chat_providers.dart';
 import 'package:native_tavern/presentation/router/app_router.dart';
 import 'package:native_tavern/presentation/theme/app_theme.dart';
 import 'package:native_tavern/presentation/widgets/common/character_avatar_image.dart';
+import 'bulk_import_dialog.dart';
 import 'character_view_mode.dart';
 
 /// Character list screen
@@ -51,6 +52,15 @@ class _CharacterListScreenState extends ConsumerState<CharacterListScreen> {
             icon: const Icon(Icons.file_download_outlined),
             tooltip: l10n.import,
             onPressed: () => context.push(AppRoutes.import_),
+          ),
+          IconButton(
+            icon: const Icon(Icons.unarchive_outlined),
+            tooltip: l10n.bulkImportTitle,
+            onPressed: () => showDialog<void>(
+              context: context,
+              barrierDismissible: false,
+              builder: (context) => const BulkImportDialog(),
+            ),
           ),
         ],
       ),

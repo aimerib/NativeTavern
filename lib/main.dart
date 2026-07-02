@@ -5,9 +5,12 @@ import 'package:native_tavern/app.dart';
 import 'package:native_tavern/core/services/initialization_service.dart';
 import 'package:native_tavern/data/repositories/character_repository.dart';
 import 'package:native_tavern/data/repositories/chat_repository.dart';
+import 'package:native_tavern/data/repositories/tag_repository.dart';
 import 'package:native_tavern/data/repositories/world_info_repository.dart';
+import 'package:native_tavern/domain/services/bulk_import_service.dart';
 import 'package:native_tavern/domain/services/llm_service.dart';
 import 'package:native_tavern/domain/services/import_service.dart';
+import 'package:native_tavern/presentation/providers/bulk_import_providers.dart';
 import 'package:native_tavern/presentation/providers/settings_providers.dart';
 import 'package:native_tavern/presentation/screens/import/import_screen.dart';
 
@@ -29,6 +32,11 @@ void main() async {
   // Create services
   final llmService = LLMService();
   final importService = ImportService(initData.dataPath);
+  final bulkImportService = BulkImportService(
+    characterRepo,
+    TagRepository(database),
+    initData.dataPath,
+  );
   
   runApp(
     ProviderScope(
@@ -44,6 +52,7 @@ void main() async {
         // Services
         llmServiceProvider.overrideWithValue(llmService),
         importServiceProvider.overrideWithValue(importService),
+        bulkImportServiceProvider.overrideWithValue(bulkImportService),
         
         // Shared preferences
         sharedPreferencesProvider.overrideWithValue(prefs),

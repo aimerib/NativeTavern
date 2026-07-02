@@ -216,7 +216,7 @@ class _VisualNovelMessageViewState extends ConsumerState<VisualNovelMessageView>
               MessageContentWidget(
                 content: message.content,
                 textColor: Colors.white,
-                selectable: true,
+                selectable: false,
                 onLongPress: () => widget.onLongPress(message),
                 isStreaming: isGenerating,
                 messageId: message.id,

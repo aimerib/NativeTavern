@@ -3393,6 +3393,25 @@ class AppLocalizationsEn extends AppLocalizations {
   String get branchFromHere => 'Branch from here';
 
   @override
+  String branchOf(String title) {
+    return 'Branch of $title';
+  }
+
+  @override
+  String get regenerateBranchDescription =>
+      'Branches to a new chat and regenerates';
+
+  @override
+  String get branchCreated => 'Branched to a new chat';
+
+  @override
+  String get continueFromHereDescription => 'Generates the next response';
+
+  @override
+  String get continueFromHereTruncateDescription =>
+      'Deletes later messages and generates the next response';
+
+  @override
   String previewBookmark(String name) {
     return 'Preview: $name';
   }
@@ -3650,4 +3669,27 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get bubbleOpacityHelp =>
       'Controls the transparency of message bubbles when a background is active.';
+
+  @override
+  String get bulkImportTitle => 'Bulk import (ST zip)';
+
+  @override
+  String get bulkImportDescription =>
+      'Import a SillyTavern library zip created with the st_export.py tool. Cards that were already imported are skipped automatically.';
+
+  @override
+  String get bulkImportChooseZip => 'Choose zip file';
+
+  @override
+  String bulkImportProgressLabel(int processed, int total) {
+    return '$processed / $total processed';
+  }
+
+  @override
+  String bulkImportSummary(int imported, int skipped, int failed) {
+    return 'Imported $imported, skipped $skipped duplicates, $failed failed';
+  }
+
+  @override
+  String get bulkImportFailedFiles => 'Failed files:';
 }

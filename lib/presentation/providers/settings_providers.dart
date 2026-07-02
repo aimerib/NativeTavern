@@ -81,6 +81,8 @@ class LLMConfigNotifier extends StateNotifier<LLMConfig> {
         return 'http://localhost:11434';
       case LLMProvider.koboldCpp:
         return 'http://localhost:5001';
+      case LLMProvider.llamaCpp:
+        return 'http://localhost:8080/v1';
       case LLMProvider.deepSeek:
         return 'https://api.deepseek.com/v1';
       case LLMProvider.qwen:
@@ -104,6 +106,8 @@ class LLMConfigNotifier extends StateNotifier<LLMConfig> {
       case LLMProvider.ollama:
         return 'llama3.2';
       case LLMProvider.koboldCpp:
+        return '';
+      case LLMProvider.llamaCpp:
         return '';
       case LLMProvider.deepSeek:
         return 'deepseek-chat';
@@ -861,6 +865,9 @@ class ModelFetchNotifier extends StateNotifier<ModelFetchState> {
             break;
           case LLMProvider.koboldCpp:
             message = 'No model loaded. Load a model in KoboldCpp first.';
+            break;
+          case LLMProvider.llamaCpp:
+            message = 'No model loaded. Start llama-server with a model first.';
             break;
           case LLMProvider.claude:
             message = 'Claude models are pre-defined. Select from the list.';

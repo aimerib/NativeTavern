@@ -15,6 +15,7 @@ enum LLMProvider {
   openRouter,
   ollama,
   koboldCpp,
+  llamaCpp,
 }
 
 /// LLM Response with content and optional reasoning/thinking
@@ -398,6 +399,7 @@ class LLMService {
       case LLMProvider.deepSeek:
       case LLMProvider.qwen:
       case LLMProvider.openAICompatible:
+      case LLMProvider.llamaCpp:
       case LLMProvider.openai:
         return _generateOpenAIWithReasoning(messages, config);
       case LLMProvider.claude:
@@ -435,6 +437,7 @@ class LLMService {
       case LLMProvider.deepSeek:
       case LLMProvider.qwen:
       case LLMProvider.openAICompatible:
+      case LLMProvider.llamaCpp:
       case LLMProvider.openai:
         return _streamOpenAIWithReasoning(messages, config);
       case LLMProvider.claude:
@@ -610,6 +613,41 @@ class LLMService {
           } else {
             _log('Error: Cannot connect to KoboldCpp');
             throw Exception('Cannot connect to KoboldCpp at ${config.apiUrl}');
+          }
+
+        case LLMProvider.llamaCpp:
+          // llama.cpp server speaks the OpenAI protocol; API key is optional
+          // (only needed when the server was started with --api-key)
+          final llamaUrl = '${config.apiUrl}/models';
+          _log('Sending GET request to $llamaUrl');
+          final llamaResponse = await _dio.get(
+            llamaUrl,
+            options: Options(
+              headers: {
+                if (config.apiKey.isNotEmpty)
+                  'Authorization': 'Bearer ${config.apiKey}',
+              },
+              validateStatus: (status) => true,
+            ),
+          );
+          _log('Response status: ${llamaResponse.statusCode}');
+          _log('Response data: ${llamaResponse.data}');
+
+          if (llamaResponse.statusCode == 200) {
+            final data = llamaResponse.data as Map<String, dynamic>?;
+            final models = (data?['data'] as List?) ?? [];
+            final modelName = models.isNotEmpty
+                ? (models.first as Map<String, dynamic>)['id'] as String? ?? 'Unknown'
+                : 'Unknown';
+            final result = 'Connected! Model: $modelName';
+            _log('Success: $result');
+            return result;
+          } else if (llamaResponse.statusCode == 401) {
+            _log('Error: Invalid API key (401)');
+            throw Exception('Invalid API key (server was started with --api-key)');
+          } else {
+            _log('Error: Cannot connect to llama.cpp server');
+            throw Exception('Cannot connect to llama.cpp server at ${config.apiUrl}');
           }
       }
     } on DioException catch (e, stackTrace) {
@@ -796,6 +834,28 @@ class LLMService {
             _log('KoboldCpp model fetch error: $e');
           }
           return [];
+
+        case LLMProvider.llamaCpp:
+          // OpenAI-compatible models endpoint; API key optional
+          _log('Fetching llama.cpp models from ${config.apiUrl}/models');
+          final response = await _dio.get(
+            '${config.apiUrl}/models',
+            options: Options(
+              headers: {
+                if (config.apiKey.isNotEmpty)
+                  'Authorization': 'Bearer ${config.apiKey}',
+              },
+            ),
+          );
+          _log('llama.cpp models response status: ${response.statusCode}');
+          final data = response.data as Map<String, dynamic>;
+          final models = (data['data'] as List<dynamic>?) ?? [];
+          final modelIds = models
+              .map((m) => (m as Map<String, dynamic>)['id'] as String)
+              .toList();
+          modelIds.sort();
+          _log('llama.cpp models: ${modelIds.length}');
+          return modelIds;
       }
     } catch (e, stackTrace) {
       _log('Error fetching models: $e', stackTrace: stackTrace);

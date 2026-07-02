@@ -154,6 +154,11 @@ class $CharactersTable extends Characters
       defaultConstraints:
           GeneratedColumn.constraintIsAlways('CHECK ("is_favorite" IN (0, 1))'),
       defaultValue: const Constant(false));
+  static const VerificationMeta _sha256Meta = const VerificationMeta('sha256');
+  @override
+  late final GeneratedColumn<String> sha256 = GeneratedColumn<String>(
+      'sha256', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
   static const VerificationMeta _createdAtMeta =
       const VerificationMeta('createdAt');
   @override
@@ -187,6 +192,7 @@ class $CharactersTable extends Characters
         characterBookJson,
         extensionsJson,
         isFavorite,
+        sha256,
         createdAt,
         modifiedAt
       ];
@@ -308,6 +314,10 @@ class $CharactersTable extends Characters
           isFavorite.isAcceptableOrUnknown(
               data['is_favorite']!, _isFavoriteMeta));
     }
+    if (data.containsKey('sha256')) {
+      context.handle(_sha256Meta,
+          sha256.isAcceptableOrUnknown(data['sha256']!, _sha256Meta));
+    }
     if (data.containsKey('created_at')) {
       context.handle(_createdAtMeta,
           createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
@@ -370,6 +380,8 @@ class $CharactersTable extends Characters
           DriftSqlType.string, data['${effectivePrefix}extensions_json'])!,
       isFavorite: attachedDatabase.typeMapping
           .read(DriftSqlType.bool, data['${effectivePrefix}is_favorite'])!,
+      sha256: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}sha256']),
       createdAt: attachedDatabase.typeMapping
           .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
       modifiedAt: attachedDatabase.typeMapping
@@ -403,6 +415,7 @@ class Character extends DataClass implements Insertable<Character> {
   final String characterBookJson;
   final String extensionsJson;
   final bool isFavorite;
+  final String? sha256;
   final DateTime createdAt;
   final DateTime modifiedAt;
   const Character(
@@ -425,6 +438,7 @@ class Character extends DataClass implements Insertable<Character> {
       required this.characterBookJson,
       required this.extensionsJson,
       required this.isFavorite,
+      this.sha256,
       required this.createdAt,
       required this.modifiedAt});
   @override
@@ -452,6 +466,9 @@ class Character extends DataClass implements Insertable<Character> {
     map['character_book_json'] = Variable<String>(characterBookJson);
     map['extensions_json'] = Variable<String>(extensionsJson);
     map['is_favorite'] = Variable<bool>(isFavorite);
+    if (!nullToAbsent || sha256 != null) {
+      map['sha256'] = Variable<String>(sha256);
+    }
     map['created_at'] = Variable<DateTime>(createdAt);
     map['modified_at'] = Variable<DateTime>(modifiedAt);
     return map;
@@ -480,6 +497,8 @@ class Character extends DataClass implements Insertable<Character> {
       characterBookJson: Value(characterBookJson),
       extensionsJson: Value(extensionsJson),
       isFavorite: Value(isFavorite),
+      sha256:
+          sha256 == null && nullToAbsent ? const Value.absent() : Value(sha256),
       createdAt: Value(createdAt),
       modifiedAt: Value(modifiedAt),
     );
@@ -510,6 +529,7 @@ class Character extends DataClass implements Insertable<Character> {
       characterBookJson: serializer.fromJson<String>(json['characterBookJson']),
       extensionsJson: serializer.fromJson<String>(json['extensionsJson']),
       isFavorite: serializer.fromJson<bool>(json['isFavorite']),
+      sha256: serializer.fromJson<String?>(json['sha256']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       modifiedAt: serializer.fromJson<DateTime>(json['modifiedAt']),
     );
@@ -538,6 +558,7 @@ class Character extends DataClass implements Insertable<Character> {
       'characterBookJson': serializer.toJson<String>(characterBookJson),
       'extensionsJson': serializer.toJson<String>(extensionsJson),
       'isFavorite': serializer.toJson<bool>(isFavorite),
+      'sha256': serializer.toJson<String?>(sha256),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'modifiedAt': serializer.toJson<DateTime>(modifiedAt),
     };
@@ -563,6 +584,7 @@ class Character extends DataClass implements Insertable<Character> {
           String? characterBookJson,
           String? extensionsJson,
           bool? isFavorite,
+          Value<String?> sha256 = const Value.absent(),
           DateTime? createdAt,
           DateTime? modifiedAt}) =>
       Character(
@@ -586,6 +608,7 @@ class Character extends DataClass implements Insertable<Character> {
         characterBookJson: characterBookJson ?? this.characterBookJson,
         extensionsJson: extensionsJson ?? this.extensionsJson,
         isFavorite: isFavorite ?? this.isFavorite,
+        sha256: sha256.present ? sha256.value : this.sha256,
         createdAt: createdAt ?? this.createdAt,
         modifiedAt: modifiedAt ?? this.modifiedAt,
       );
@@ -633,6 +656,7 @@ class Character extends DataClass implements Insertable<Character> {
           : this.extensionsJson,
       isFavorite:
           data.isFavorite.present ? data.isFavorite.value : this.isFavorite,
+      sha256: data.sha256.present ? data.sha256.value : this.sha256,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       modifiedAt:
           data.modifiedAt.present ? data.modifiedAt.value : this.modifiedAt,
@@ -661,6 +685,7 @@ class Character extends DataClass implements Insertable<Character> {
           ..write('characterBookJson: $characterBookJson, ')
           ..write('extensionsJson: $extensionsJson, ')
           ..write('isFavorite: $isFavorite, ')
+          ..write('sha256: $sha256, ')
           ..write('createdAt: $createdAt, ')
           ..write('modifiedAt: $modifiedAt')
           ..write(')'))
@@ -688,6 +713,7 @@ class Character extends DataClass implements Insertable<Character> {
         characterBookJson,
         extensionsJson,
         isFavorite,
+        sha256,
         createdAt,
         modifiedAt
       ]);
@@ -714,6 +740,7 @@ class Character extends DataClass implements Insertable<Character> {
           other.characterBookJson == this.characterBookJson &&
           other.extensionsJson == this.extensionsJson &&
           other.isFavorite == this.isFavorite &&
+          other.sha256 == this.sha256 &&
           other.createdAt == this.createdAt &&
           other.modifiedAt == this.modifiedAt);
 }
@@ -738,6 +765,7 @@ class CharactersCompanion extends UpdateCompanion<Character> {
   final Value<String> characterBookJson;
   final Value<String> extensionsJson;
   final Value<bool> isFavorite;
+  final Value<String?> sha256;
   final Value<DateTime> createdAt;
   final Value<DateTime> modifiedAt;
   final Value<int> rowid;
@@ -761,6 +789,7 @@ class CharactersCompanion extends UpdateCompanion<Character> {
     this.characterBookJson = const Value.absent(),
     this.extensionsJson = const Value.absent(),
     this.isFavorite = const Value.absent(),
+    this.sha256 = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.modifiedAt = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -785,6 +814,7 @@ class CharactersCompanion extends UpdateCompanion<Character> {
     this.characterBookJson = const Value.absent(),
     this.extensionsJson = const Value.absent(),
     this.isFavorite = const Value.absent(),
+    this.sha256 = const Value.absent(),
     required DateTime createdAt,
     required DateTime modifiedAt,
     this.rowid = const Value.absent(),
@@ -812,6 +842,7 @@ class CharactersCompanion extends UpdateCompanion<Character> {
     Expression<String>? characterBookJson,
     Expression<String>? extensionsJson,
     Expression<bool>? isFavorite,
+    Expression<String>? sha256,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? modifiedAt,
     Expression<int>? rowid,
@@ -837,6 +868,7 @@ class CharactersCompanion extends UpdateCompanion<Character> {
       if (characterBookJson != null) 'character_book_json': characterBookJson,
       if (extensionsJson != null) 'extensions_json': extensionsJson,
       if (isFavorite != null) 'is_favorite': isFavorite,
+      if (sha256 != null) 'sha256': sha256,
       if (createdAt != null) 'created_at': createdAt,
       if (modifiedAt != null) 'modified_at': modifiedAt,
       if (rowid != null) 'rowid': rowid,
@@ -863,6 +895,7 @@ class CharactersCompanion extends UpdateCompanion<Character> {
       Value<String>? characterBookJson,
       Value<String>? extensionsJson,
       Value<bool>? isFavorite,
+      Value<String?>? sha256,
       Value<DateTime>? createdAt,
       Value<DateTime>? modifiedAt,
       Value<int>? rowid}) {
@@ -887,6 +920,7 @@ class CharactersCompanion extends UpdateCompanion<Character> {
       characterBookJson: characterBookJson ?? this.characterBookJson,
       extensionsJson: extensionsJson ?? this.extensionsJson,
       isFavorite: isFavorite ?? this.isFavorite,
+      sha256: sha256 ?? this.sha256,
       createdAt: createdAt ?? this.createdAt,
       modifiedAt: modifiedAt ?? this.modifiedAt,
       rowid: rowid ?? this.rowid,
@@ -954,6 +988,9 @@ class CharactersCompanion extends UpdateCompanion<Character> {
     if (isFavorite.present) {
       map['is_favorite'] = Variable<bool>(isFavorite.value);
     }
+    if (sha256.present) {
+      map['sha256'] = Variable<String>(sha256.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -988,6 +1025,7 @@ class CharactersCompanion extends UpdateCompanion<Character> {
           ..write('characterBookJson: $characterBookJson, ')
           ..write('extensionsJson: $extensionsJson, ')
           ..write('isFavorite: $isFavorite, ')
+          ..write('sha256: $sha256, ')
           ..write('createdAt: $createdAt, ')
           ..write('modifiedAt: $modifiedAt, ')
           ..write('rowid: $rowid')
@@ -6522,6 +6560,7 @@ typedef $$CharactersTableCreateCompanionBuilder = CharactersCompanion Function({
   Value<String> characterBookJson,
   Value<String> extensionsJson,
   Value<bool> isFavorite,
+  Value<String?> sha256,
   required DateTime createdAt,
   required DateTime modifiedAt,
   Value<int> rowid,
@@ -6546,6 +6585,7 @@ typedef $$CharactersTableUpdateCompanionBuilder = CharactersCompanion Function({
   Value<String> characterBookJson,
   Value<String> extensionsJson,
   Value<bool> isFavorite,
+  Value<String?> sha256,
   Value<DateTime> createdAt,
   Value<DateTime> modifiedAt,
   Value<int> rowid,
@@ -6672,6 +6712,9 @@ class $$CharactersTableFilterComposer
 
   ColumnFilters<bool> get isFavorite => $composableBuilder(
       column: $table.isFavorite, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get sha256 => $composableBuilder(
+      column: $table.sha256, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<DateTime> get createdAt => $composableBuilder(
       column: $table.createdAt, builder: (column) => ColumnFilters(column));
@@ -6818,6 +6861,9 @@ class $$CharactersTableOrderingComposer
   ColumnOrderings<bool> get isFavorite => $composableBuilder(
       column: $table.isFavorite, builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<String> get sha256 => $composableBuilder(
+      column: $table.sha256, builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
       column: $table.createdAt, builder: (column) => ColumnOrderings(column));
 
@@ -6890,6 +6936,9 @@ class $$CharactersTableAnnotationComposer
 
   GeneratedColumn<bool> get isFavorite => $composableBuilder(
       column: $table.isFavorite, builder: (column) => column);
+
+  GeneratedColumn<String> get sha256 =>
+      $composableBuilder(column: $table.sha256, builder: (column) => column);
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
@@ -7004,6 +7053,7 @@ class $$CharactersTableTableManager extends RootTableManager<
             Value<String> characterBookJson = const Value.absent(),
             Value<String> extensionsJson = const Value.absent(),
             Value<bool> isFavorite = const Value.absent(),
+            Value<String?> sha256 = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
             Value<DateTime> modifiedAt = const Value.absent(),
             Value<int> rowid = const Value.absent(),
@@ -7028,6 +7078,7 @@ class $$CharactersTableTableManager extends RootTableManager<
             characterBookJson: characterBookJson,
             extensionsJson: extensionsJson,
             isFavorite: isFavorite,
+            sha256: sha256,
             createdAt: createdAt,
             modifiedAt: modifiedAt,
             rowid: rowid,
@@ -7052,6 +7103,7 @@ class $$CharactersTableTableManager extends RootTableManager<
             Value<String> characterBookJson = const Value.absent(),
             Value<String> extensionsJson = const Value.absent(),
             Value<bool> isFavorite = const Value.absent(),
+            Value<String?> sha256 = const Value.absent(),
             required DateTime createdAt,
             required DateTime modifiedAt,
             Value<int> rowid = const Value.absent(),
@@ -7076,6 +7128,7 @@ class $$CharactersTableTableManager extends RootTableManager<
             characterBookJson: characterBookJson,
             extensionsJson: extensionsJson,
             isFavorite: isFavorite,
+            sha256: sha256,
             createdAt: createdAt,
             modifiedAt: modifiedAt,
             rowid: rowid,

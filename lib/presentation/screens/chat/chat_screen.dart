@@ -125,9 +125,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
   /// Check if API is properly configured
   bool _isApiConfigured(LLMConfig config) {
-    // Local providers (Ollama, KoboldCpp) don't need API key
+    // Local providers (Ollama, KoboldCpp, llama.cpp) don't need API key
     if (config.provider == LLMProvider.ollama ||
-        config.provider == LLMProvider.koboldCpp) {
+        config.provider == LLMProvider.koboldCpp ||
+        config.provider == LLMProvider.llamaCpp) {
       return config.apiUrl.isNotEmpty;
     }
     // Cloud providers need API key
@@ -532,6 +533,92 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     _scrollToBottom();
   }
 
+  /// Regenerate from any message. If the message is not the most recent,
+  /// this branches to a new chat (preserving the original) and regenerates
+  /// there, navigating to the new chat.
+  Future<void> _regenerateFromMessage(ChatMessage message) async {
+    final config = ref.read(llmConfigProvider);
+
+    // Check if API is configured
+    if (!_isApiConfigured(config)) {
+      _showApiConfigurationDialog();
+      return;
+    }
+
+    final l10n = AppLocalizations.of(context);
+    final chatTitle = ref.read(activeChatProvider).chat?.title ?? '';
+
+    final newChatId =
+        await ref.read(activeChatProvider.notifier).regenerateFromMessage(
+              message.id,
+              config,
+              branchTitle: l10n.branchOf(chatTitle),
+            );
+
+    if (!mounted) return;
+
+    if (newChatId != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.branchCreated)),
+      );
+      context.pushReplacement('/chat/$newChatId');
+    } else {
+      _scrollToBottom();
+    }
+  }
+
+  /// Continue the conversation from a message: deletes anything after it
+  /// and generates the next response.
+  Future<void> _continueFromMessage(ChatMessage message) async {
+    final config = ref.read(llmConfigProvider);
+
+    // Check if API is configured
+    if (!_isApiConfigured(config)) {
+      _showApiConfigurationDialog();
+      return;
+    }
+
+    await ref
+        .read(activeChatProvider.notifier)
+        .continueFromMessage(message.id, config);
+    _scrollToBottom();
+  }
+
+  /// Edit a message via dialog (used by visual novel mode, where the
+  /// inline bubble editor is not available)
+  void _showEditMessageDialog(ChatMessage message) {
+    final l10n = AppLocalizations.of(context);
+    final controller = TextEditingController(text: message.content);
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l10n.edit),
+        content: TextField(
+          controller: controller,
+          maxLines: null,
+          autofocus: true,
+          decoration: const InputDecoration(border: OutlineInputBorder()),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(l10n.cancel),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              ref
+                  .read(activeChatProvider.notifier)
+                  .editMessage(message.id, controller.text);
+            },
+            child: Text(l10n.save),
+          ),
+        ],
+      ),
+    ).then((_) => controller.dispose());
+  }
+
   @override
   Widget build(BuildContext context) {
     final chatState = ref.watch(activeChatProvider);
@@ -920,8 +1007,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   void _showMessageOptionsForVisualNovel(
       BuildContext context, ChatMessage message, ActiveChatState chatState) {
     final l10n = AppLocalizations.of(context);
-    final config = ref.read(llmConfigProvider);
-    final isAssistant = message.role == MessageRole.assistant;
+    final isLast = chatState.messages.isNotEmpty &&
+        chatState.messages.last.id == message.id;
 
     showModalBottomSheet(
       context: context,
@@ -938,32 +1025,44 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               title: Text(l10n.copy),
               onTap: () {
                 Navigator.pop(context);
-                // Copy to clipboard
-                final content = message.content;
-                if (content.isNotEmpty) {
-                  // Implement copy
+                if (message.content.isNotEmpty) {
+                  Clipboard.setData(ClipboardData(text: message.content));
                 }
               },
             ),
-            if (isAssistant)
+            ListTile(
+              leading: const Icon(Icons.edit),
+              title: Text(l10n.edit),
+              onTap: () {
+                Navigator.pop(context);
+                _showEditMessageDialog(message);
+              },
+            ),
+            if (message.role != MessageRole.system)
               ListTile(
                 leading: const Icon(Icons.refresh),
                 title: Text(l10n.regenerate),
+                subtitle: Text(
+                  isLast
+                      ? l10n.generateNewResponse
+                      : l10n.regenerateBranchDescription,
+                ),
                 onTap: () {
                   Navigator.pop(context);
-                  ref
-                      .read(activeChatProvider.notifier)
-                      .regenerateMessage(message.id, config);
+                  _regenerateFromMessage(message);
                 },
               ),
             ListTile(
               leading: const Icon(Icons.play_arrow),
               title: Text(l10n.continueFromHere),
+              subtitle: Text(
+                isLast
+                    ? l10n.continueFromHereDescription
+                    : l10n.continueFromHereTruncateDescription,
+              ),
               onTap: () {
                 Navigator.pop(context);
-                ref
-                    .read(activeChatProvider.notifier)
-                    .continueFromMessage(message.id, config);
+                _continueFromMessage(message);
               },
             ),
             ListTile(
@@ -982,7 +1081,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   }
 
   Widget _buildMessageList(ActiveChatState chatState) {
-    final config = ref.read(llmConfigProvider);
     final backgroundAsync =
         ref.watch(effectiveBackgroundProvider(chatState.character?.id));
     final background = backgroundAsync.valueOrNull ?? ChatBackground.none;
@@ -1031,20 +1129,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           onDelete: () {
             _showDeleteConfirmation(message.id);
           },
-          onRegenerate: message.role == MessageRole.assistant
-              ? () {
-                  ref.read(activeChatProvider.notifier).regenerateMessage(
-                        message.id,
-                        config,
-                      );
-                }
-              : null,
-          onContinueFromHere: () {
-            ref.read(activeChatProvider.notifier).continueFromMessage(
-                  message.id,
-                  config,
-                );
-          },
+          onRegenerate: message.role == MessageRole.system
+              ? null
+              : () => _regenerateFromMessage(message),
+          onContinueFromHere: () => _continueFromMessage(message),
           onDeleteAndAfter: () {
             _showDeleteAndAfterConfirmation(message.id);
           },
@@ -2164,7 +2252,10 @@ class _MessageBubbleState extends State<_MessageBubble> {
                                   textColor: isUser
                                       ? Colors.white
                                       : AppTheme.textPrimary,
-                                  selectable: true,
+                                  // Text selection steals long-press from the
+                                  // options menu; copy is available from the
+                                  // menu and while editing.
+                                  selectable: false,
                                   onLongPress: () =>
                                       _showMessageOptions(context),
                                   isStreaming: widget.isGenerating,
@@ -2445,7 +2536,6 @@ class _MessageBubbleState extends State<_MessageBubble> {
 
   void _showMessageOptions(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final isAssistant = widget.message.role == MessageRole.assistant;
 
     showModalBottomSheet(
       context: context,
@@ -2496,13 +2586,17 @@ class _MessageBubbleState extends State<_MessageBubble> {
               },
             ),
 
-            // Regenerate (only for assistant messages)
-            if (isAssistant && widget.onRegenerate != null)
+            // Regenerate from this point (branches if not the latest message)
+            if (widget.onRegenerate != null)
               ListTile(
                 leading:
                     const Icon(Icons.refresh, color: AppTheme.primaryColor),
                 title: Text(l10n.regenerate),
-                subtitle: Text(l10n.generateNewResponse),
+                subtitle: Text(
+                  widget.isLast
+                      ? l10n.generateNewResponse
+                      : l10n.regenerateBranchDescription,
+                ),
                 onTap: () {
                   Navigator.pop(context);
                   widget.onRegenerate!();
@@ -2515,9 +2609,9 @@ class _MessageBubbleState extends State<_MessageBubble> {
                   const Icon(Icons.play_arrow, color: AppTheme.accentColor),
               title: Text(l10n.continueFromHere),
               subtitle: Text(
-                widget.message.role == MessageRole.user
-                    ? l10n.deleteMessagesAfterAndRegenerate
-                    : l10n.deleteMessagesAfterThis,
+                widget.isLast
+                    ? l10n.continueFromHereDescription
+                    : l10n.continueFromHereTruncateDescription,
               ),
               onTap: () {
                 Navigator.pop(context);
