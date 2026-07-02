@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/models/character.dart';
 import '../../data/repositories/character_repository.dart';
+import './character_providers.dart';
 import './tag_providers.dart';
 
 /// Sort options for characters
@@ -147,11 +148,12 @@ final allCombinedTagsProvider = FutureProvider<List<dynamic>>((ref) async {
 
 /// Provider for filtered and sorted characters
 final filteredCharactersProvider = FutureProvider<List<Character>>((ref) async {
-  final repo = ref.watch(characterRepositoryProvider);
   final filterState = ref.watch(characterFilterProvider);
   final tagRepo = ref.watch(tagRepositoryProvider);
-  
-  var characters = await repo.getAllCharacters();
+
+  // Derive from characterListProvider so refreshes and add/delete propagate.
+  var characters =
+      List<Character>.from(await ref.watch(characterListProvider.future));
   
   // Apply search filter
   if (filterState.searchQuery.isNotEmpty) {

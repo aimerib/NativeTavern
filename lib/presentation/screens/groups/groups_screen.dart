@@ -285,10 +285,14 @@ class _GroupCard extends ConsumerWidget {
   }
 
   void _startGroupChat(BuildContext context, WidgetRef ref) {
-    // TODO: Create group chat and navigate to it
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(AppLocalizations.of(context)!.groupChatWillBeImplemented)),
-    );
+    if (group.members.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AppLocalizations.of(context)!.groupNeedsMembers)),
+      );
+      return;
+    }
+    ref.read(activeGroupIdProvider.notifier).state = group.id;
+    context.go('/chat/${group.members.first.characterId}');
   }
 
   void _confirmDelete(BuildContext context, WidgetRef ref) {

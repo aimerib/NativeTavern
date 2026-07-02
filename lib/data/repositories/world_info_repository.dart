@@ -277,6 +277,23 @@ class WorldInfoRepository {
     return entry;
   }
 
+  /// Persist a new entry order by reassigning insertionOrder sequentially
+  Future<void> reorderEntries(
+    String worldInfoId,
+    List<models.WorldInfoEntry> orderedEntries,
+  ) async {
+    await _db.transaction(() async {
+      for (var i = 0; i < orderedEntries.length; i++) {
+        await (_db.update(_db.worldInfoEntries)
+              ..where((t) => t.id.equals(orderedEntries[i].id)))
+            .write(WorldInfoEntriesCompanion(insertionOrder: Value(i)));
+      }
+      await (_db.update(_db.worldInfos)
+            ..where((t) => t.id.equals(worldInfoId)))
+          .write(WorldInfosCompanion(modifiedAt: Value(DateTime.now())));
+    });
+  }
+
   /// Delete entry
   Future<void> deleteEntry(String id) async {
     await (_db.delete(_db.worldInfoEntries)..where((t) => t.id.equals(id)))

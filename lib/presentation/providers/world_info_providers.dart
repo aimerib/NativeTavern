@@ -115,6 +115,14 @@ class WorldInfoNotifier extends StateNotifier<AsyncValue<List<WorldInfo>>> {
     await _repository.deleteEntry(id);
     await _loadWorldInfos();
   }
+
+  Future<void> reorderEntries(
+    String worldInfoId,
+    List<WorldInfoEntry> orderedEntries,
+  ) async {
+    await _repository.reorderEntries(worldInfoId, orderedEntries);
+    await _loadWorldInfos();
+  }
 }
 
 /// Provider for world info notifier

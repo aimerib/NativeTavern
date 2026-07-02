@@ -1145,8 +1145,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get groupChatWillBeImplemented =>
-      'Group chat will be implemented with chat integration';
+  String get groupNeedsMembers => 'Add at least one member to start a chat';
 
   @override
   String deleteGroupConfirmation(String name) {

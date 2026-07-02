@@ -1959,9 +1959,9 @@
     }
   },
   
-  "groupChatWillBeImplemented": "Group chat will be implemented with chat integration",
-  "@groupChatWillBeImplemented": {
-    "description": "Group chat coming soon message"
+  "groupNeedsMembers": "Add at least one member to start a chat",
+  "@groupNeedsMembers": {
+    "description": "Shown when starting a chat on a group with no members"
   },
   
   "deleteGroupConfirmation": "Are you sure you want to delete \"{name}\"? This will also delete all associated chats.",

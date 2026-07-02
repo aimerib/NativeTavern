@@ -2206,11 +2206,11 @@ abstract class AppLocalizations {
   /// **'{count} members • {mode} mode'**
   String membersAndMode(int count, String mode);
 
-  /// Group chat coming soon message
+  /// Shown when starting a chat on a group with no members
   ///
   /// In en, this message translates to:
-  /// **'Group chat will be implemented with chat integration'**
-  String get groupChatWillBeImplemented;
+  /// **'Add at least one member to start a chat'**
+  String get groupNeedsMembers;
 
   /// Delete group confirmation
   ///

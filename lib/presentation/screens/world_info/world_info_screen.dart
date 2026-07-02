@@ -884,7 +884,15 @@ class _WorldInfoEntriesScreenState extends ConsumerState<WorldInfoEntriesScreen>
               padding: const EdgeInsets.all(16),
               itemCount: _worldInfo.entries.length,
               onReorder: (oldIndex, newIndex) {
-                // TODO: Implement reordering
+                if (newIndex > oldIndex) newIndex -= 1;
+                final entries = List<WorldInfoEntry>.from(_worldInfo.entries);
+                final moved = entries.removeAt(oldIndex);
+                entries.insert(newIndex, moved);
+                // Update locally first so the row doesn't snap back while saving.
+                setState(() => _worldInfo = _worldInfo.copyWith(entries: entries));
+                ref
+                    .read(worldInfoNotifierProvider.notifier)
+                    .reorderEntries(_worldInfo.id, entries);
               },
               itemBuilder: (context, index) {
                 final entry = _worldInfo.entries[index];

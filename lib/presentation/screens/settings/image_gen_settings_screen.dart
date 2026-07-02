@@ -68,7 +68,13 @@ class ImageGenSettingsScreen extends ConsumerWidget {
                           }
                         }
                       : null,
-                  items: ImageGenProvider.values.map((provider) {
+                  // ComfyUI generation is not implemented yet; keep it out of
+                  // the list unless it's already the stored selection.
+                  items: ImageGenProvider.values
+                      .where((provider) =>
+                          provider != ImageGenProvider.comfyui ||
+                          provider == settings.provider)
+                      .map((provider) {
                     return DropdownMenuItem(
                       value: provider,
                       child: Text(provider.displayName),

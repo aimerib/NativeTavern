@@ -1,11 +1,12 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:native_tavern/data/models/character.dart';
 import 'package:native_tavern/l10n/generated/app_localizations.dart';
 import 'package:native_tavern/presentation/providers/character_providers.dart';
+import 'package:native_tavern/presentation/providers/character_filter_providers.dart';
 import 'package:native_tavern/presentation/providers/chat_providers.dart';
+import 'package:native_tavern/presentation/widgets/character/character_filter_bar.dart';
 import 'package:native_tavern/presentation/router/app_router.dart';
 import 'package:native_tavern/presentation/theme/app_theme.dart';
 import 'package:native_tavern/presentation/widgets/common/character_avatar_image.dart';
@@ -21,13 +22,12 @@ class CharacterListScreen extends ConsumerStatefulWidget {
 }
 
 class _CharacterListScreenState extends ConsumerState<CharacterListScreen> {
-  String _searchQuery = '';
   CharacterViewMode _viewMode = CharacterViewMode.compactGrid;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final charactersAsync = ref.watch(characterListProvider);
+    final charactersAsync = ref.watch(filteredCharactersProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -66,30 +66,21 @@ class _CharacterListScreenState extends ConsumerState<CharacterListScreen> {
       ),
       body: Column(
         children: [
-          _SearchBar(
-            onChanged: (value) => setState(() => _searchQuery = value),
-          ),
+          const CharacterFilterBar(),
           Expanded(
             child: charactersAsync.when(
               data: (characters) {
-                final filtered = _searchQuery.isEmpty
-                    ? characters
-                    : characters.where((c) => 
-                        c.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-                        c.description.toLowerCase().contains(_searchQuery.toLowerCase())
-                      ).toList();
-
-                if (filtered.isEmpty) {
+                if (characters.isEmpty) {
                   return const _EmptyState();
                 }
 
                 switch (_viewMode) {
                   case CharacterViewMode.list:
-                    return _CharacterListView(characters: filtered);
+                    return _CharacterListView(characters: characters);
                   case CharacterViewMode.grid:
-                    return _CharacterGridView(characters: filtered);
+                    return _CharacterGridView(characters: characters);
                   case CharacterViewMode.compactGrid:
-                    return _CharacterCompactGridView(characters: filtered);
+                    return _CharacterCompactGridView(characters: characters);
                 }
               },
               loading: () => const Center(child: CircularProgressIndicator()),
@@ -124,34 +115,6 @@ class _CharacterListScreenState extends ConsumerState<CharacterListScreen> {
       case CharacterViewMode.compactGrid:
         return const Icon(Icons.view_compact);
     }
-  }
-}
-
-class _SearchBar extends StatelessWidget {
-  final ValueChanged<String> onChanged;
-
-  const _SearchBar({required this.onChanged});
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: TextField(
-        onChanged: onChanged,
-        decoration: InputDecoration(
-          hintText: l10n.searchCharacters,
-          prefixIcon: const Icon(Icons.search),
-          suffixIcon: IconButton(
-            icon: const Icon(Icons.filter_list),
-            onPressed: () {
-              // TODO: Show filter options
-            },
-          ),
-        ),
-      ),
-    );
   }
 }
 
