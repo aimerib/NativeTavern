@@ -4708,7 +4708,7 @@ abstract class AppLocalizations {
   /// **'OpenAI\'s Whisper model for high-accuracy transcription. Requires an API key.'**
   String get whisperDescription;
 
-  /// Voice input tooltip
+  /// Tooltip for the microphone button in the chat input
   ///
   /// In en, this message translates to:
   /// **'Voice input'**
@@ -6747,6 +6747,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Failed files:'**
   String get bulkImportFailedFiles;
+
+  /// Message menu action to translate the message
+  ///
+  /// In en, this message translates to:
+  /// **'Translate'**
+  String get translateMessage;
+
+  /// Message menu action to remove the translation and show the original text
+  ///
+  /// In en, this message translates to:
+  /// **'Show original'**
+  String get showOriginalMessage;
+
+  /// Snackbar shown when a message could not be translated
+  ///
+  /// In en, this message translates to:
+  /// **'Translation failed'**
+  String get translationFailed;
+
+  /// Message menu action to speak the message with TTS
+  ///
+  /// In en, this message translates to:
+  /// **'Read aloud'**
+  String get readAloud;
+
+  /// Message menu action to stop TTS playback
+  ///
+  /// In en, this message translates to:
+  /// **'Stop speaking'**
+  String get stopSpeaking;
+
+  /// Snackbar shown when /bg sets a new chat background
+  ///
+  /// In en, this message translates to:
+  /// **'Background updated'**
+  String get backgroundUpdated;
+
+  /// Snackbar shown when /bg clears the chat background
+  ///
+  /// In en, this message translates to:
+  /// **'Background cleared'**
+  String get backgroundCleared;
+
+  /// Snackbar shown when /bg receives an argument it cannot use
+  ///
+  /// In en, this message translates to:
+  /// **'Provide an image URL, a file path, or \"clear\"'**
+  String get invalidBackgroundArgument;
+
+  /// Logprobs settings entry and message menu action
+  ///
+  /// In en, this message translates to:
+  /// **'Token Probabilities'**
+  String get tokenProbabilities;
 }
 
 class _AppLocalizationsDelegate

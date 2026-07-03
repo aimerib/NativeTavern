@@ -69,6 +69,8 @@ dependencies:
   google_sign_in: ^6.2.1
   googleapis: ^13.2.0
   extension_google_sign_in_as_googleapis_auth: ^2.0.12
+  flutter_tts: ^4.2.5
+  speech_to_text: ^7.4.0
 
 dev_dependencies:
   flutter_test:

@@ -190,6 +190,8 @@ class VectorStorageSettings {
   final String promptTemplate;
   final EmbeddingProvider embeddingProvider;
   final String? embeddingModel;
+  final String? embeddingApiKey;
+  final String? embeddingEndpoint;
 
   const VectorStorageSettings({
     this.enabled = false,
@@ -200,6 +202,8 @@ class VectorStorageSettings {
     this.promptTemplate = defaultPromptTemplate,
     this.embeddingProvider = EmbeddingProvider.openai,
     this.embeddingModel,
+    this.embeddingApiKey,
+    this.embeddingEndpoint,
   });
 
   static const defaultPromptTemplate = '''
@@ -222,6 +226,8 @@ Use the above context to help answer the user's question if relevant.
         orElse: () => EmbeddingProvider.openai,
       ),
       embeddingModel: json['embeddingModel'] as String?,
+      embeddingApiKey: json['embeddingApiKey'] as String?,
+      embeddingEndpoint: json['embeddingEndpoint'] as String?,
     );
   }
 
@@ -235,6 +241,8 @@ Use the above context to help answer the user's question if relevant.
       'promptTemplate': promptTemplate,
       'embeddingProvider': embeddingProvider.name,
       'embeddingModel': embeddingModel,
+      'embeddingApiKey': embeddingApiKey,
+      'embeddingEndpoint': embeddingEndpoint,
     };
   }
 
@@ -247,6 +255,8 @@ Use the above context to help answer the user's question if relevant.
     String? promptTemplate,
     EmbeddingProvider? embeddingProvider,
     String? embeddingModel,
+    String? embeddingApiKey,
+    String? embeddingEndpoint,
     bool clearActiveCollection = false,
   }) {
     return VectorStorageSettings(
@@ -258,6 +268,8 @@ Use the above context to help answer the user's question if relevant.
       promptTemplate: promptTemplate ?? this.promptTemplate,
       embeddingProvider: embeddingProvider ?? this.embeddingProvider,
       embeddingModel: embeddingModel ?? this.embeddingModel,
+      embeddingApiKey: embeddingApiKey ?? this.embeddingApiKey,
+      embeddingEndpoint: embeddingEndpoint ?? this.embeddingEndpoint,
     );
   }
 

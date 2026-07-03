@@ -19,12 +19,18 @@ import 'package:native_tavern/presentation/providers/background_providers.dart';
 import 'package:native_tavern/presentation/providers/chat_providers.dart';
 import 'package:native_tavern/presentation/providers/persona_providers.dart';
 import 'package:native_tavern/presentation/providers/quick_reply_providers.dart';
+import 'package:native_tavern/domain/services/stt_service.dart';
 import 'package:native_tavern/presentation/providers/settings_providers.dart';
+import 'package:native_tavern/presentation/providers/stt_providers.dart';
+import 'package:native_tavern/presentation/providers/translation_providers.dart';
+import 'package:native_tavern/presentation/providers/tts_providers.dart';
 import 'package:native_tavern/presentation/theme/app_theme.dart';
 import 'package:native_tavern/presentation/widgets/chat/author_note_dialog.dart';
 import 'package:native_tavern/presentation/widgets/chat/bookmark_dialog.dart';
 import 'package:native_tavern/presentation/widgets/chat/chat_background_widget.dart';
 import 'package:native_tavern/presentation/widgets/chat/message_content_widget.dart';
+import 'package:native_tavern/presentation/providers/logprobs_providers.dart';
+import 'package:native_tavern/presentation/widgets/chat/logprobs_panel.dart';
 import 'package:native_tavern/presentation/widgets/chat/quick_reply_bar.dart';
 import 'package:native_tavern/presentation/widgets/chat/markdown_input_field.dart';
 import 'package:native_tavern/presentation/widgets/chat/reasoning_widget.dart';
@@ -63,6 +69,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   final FocusNode _focusNode = FocusNode();
   bool _showSlashSuggestions = false;
   bool _showInputMenu = false; // Controls visibility of the menu to the left of the input field
+  String _sttBaseText = ''; // Text already in the input when voice input started
   final List<ChatAttachment> _pendingAttachments = [];
   final ImagePicker _imagePicker = ImagePicker();
 
@@ -280,12 +287,77 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     // Hide keyboard on mobile platforms
     _focusNode.unfocus();
 
+    var outgoing = content;
+    final trSettings = ref.read(translationSettingsProvider);
+    if (trSettings.enabled &&
+        trSettings.autoTranslateOutgoing &&
+        content.isNotEmpty) {
+      // Translate user input into the chat language (the configured source
+      // language); with auto-detect there is no known chat language, so
+      // fall back to English.
+      final target =
+          trSettings.sourceLanguage == 'auto' ? 'en' : trSettings.sourceLanguage;
+      final result = await ref.read(translationServiceProvider).translate(
+            content,
+            sourceLanguage: 'auto',
+            targetLanguage: target,
+          );
+      if (result != null && result.translatedText.isNotEmpty) {
+        outgoing = result.translatedText;
+      }
+    }
+
     await ref.read(activeChatProvider.notifier).sendMessage(
-          content,
+          outgoing,
           config,
           attachments: attachments,
         );
     _scrollToBottom();
+  }
+
+  /// Hooks that run when an AI response finishes generating
+  void _onResponseCompleted(ChatMessage message) {
+    final trSettings = ref.read(translationSettingsProvider);
+    if (trSettings.enabled && trSettings.autoTranslateIncoming) {
+      ref
+          .read(messageTranslationsProvider.notifier)
+          .translateMessage(message.id, message.content);
+    }
+
+    final ttsSettings = ref.read(ttsSettingsProvider);
+    if (ttsSettings.enabled && ttsSettings.autoPlay) {
+      ref.read(ttsSpeakProvider)(
+        message.content,
+        characterId: ref.read(activeChatProvider).character?.id,
+      );
+    }
+  }
+
+  /// Toggle speech-to-text voice input; recognized words are appended to
+  /// whatever was already typed.
+  Future<void> _toggleVoiceInput() async {
+    if (!ref.read(sttListeningProvider)) {
+      _sttBaseText = _messageController.text.trim();
+    }
+    await ref.read(sttToggleListeningProvider)();
+  }
+
+  void _onSttResult(STTResult result) {
+    final recognized = result.text.trim();
+    final combined = _sttBaseText.isEmpty
+        ? recognized
+        : '$_sttBaseText $recognized'.trim();
+    _messageController.text = combined;
+    _messageController.selection =
+        TextSelection.collapsed(offset: combined.length);
+
+    if (result.isFinal) {
+      ref.read(sttClearResultProvider)();
+      final settings = ref.read(sttSettingsProvider);
+      if (settings.autoSend && combined.isNotEmpty) {
+        _sendMessage();
+      }
+    }
   }
 
   Future<void> _handleSlashCommand(String input) async {
@@ -361,14 +433,14 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
       case 'sys':
         if (argument != null && argument.isNotEmpty) {
-          // Send as system/narrator message
-          _showSystemMessage(argument);
+          // Add as system/narrator message (no generation)
+          await chatNotifier.addSystemMessage(argument);
+          _scrollToBottom();
         }
         break;
 
       case 'bg':
-        // TODO: Implement background change
-        _showSnackBar('Background feature coming soon');
+        await _handleBackgroundCommand(argument);
         break;
 
       case 'help':
@@ -450,10 +522,43 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         .swipeMessage(lastMessage.id, newIndex);
   }
 
-  void _showSystemMessage(String content) {
+  /// Handle /bg [url|clear] — sets or clears the chat background.
+  /// Applies to the current character when there is one, otherwise globally.
+  Future<void> _handleBackgroundCommand(String? argument) async {
     final l10n = AppLocalizations.of(context);
-    // For now, just show a snackbar. In the future, this could inject a system message
-    _showSnackBar('${l10n.system}: $content');
+    final characterId = ref.read(activeChatProvider).character?.id;
+
+    Future<void> apply(ChatBackground? background) {
+      if (characterId != null) {
+        final notifier =
+            ref.read(characterBackgroundProvider(characterId).notifier);
+        return background == null
+            ? notifier.clearBackground()
+            : notifier.setBackground(background);
+      }
+      final notifier = ref.read(globalBackgroundProvider.notifier);
+      return background == null
+          ? notifier.clearBackground()
+          : notifier.setBackground(background);
+    }
+
+    final arg = argument?.trim() ?? '';
+    if (arg.isEmpty || arg == 'clear' || arg == 'none') {
+      await apply(null);
+      _showSnackBar(l10n.backgroundCleared);
+      return;
+    }
+
+    final uri = Uri.tryParse(arg);
+    if (uri != null && (uri.isScheme('http') || uri.isScheme('https'))) {
+      await apply(ChatBackground.imageUrl(arg));
+      _showSnackBar(l10n.backgroundUpdated);
+    } else if (File(arg).existsSync()) {
+      await apply(ChatBackground.imagePath(arg));
+      _showSnackBar(l10n.backgroundUpdated);
+    } else {
+      _showSnackBar(l10n.invalidBackgroundArgument);
+    }
   }
 
   void _showHelpDialog(String? commandName) {
@@ -640,6 +745,22 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       if (messageCountChanged || loadingFinished) {
         _scrollToBottomImmediate();
       }
+
+      // When a generation finishes, run the configured post-response hooks
+      final generationFinished =
+          previous?.isGenerating == true && next.isGenerating == false;
+      if (generationFinished && next.messages.isNotEmpty) {
+        final lastMessage = next.messages.last;
+        if (lastMessage.role == MessageRole.assistant &&
+            lastMessage.content.isNotEmpty) {
+          _onResponseCompleted(lastMessage);
+        }
+      }
+    });
+
+    // Feed voice-input results into the message field
+    ref.listen(sttResultProvider, (previous, next) {
+      if (next != null) _onSttResult(next);
     });
 
     return Scaffold(
@@ -875,6 +996,14 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               ),
             ),
             PopupMenuItem(
+              value: 'statistics',
+              child: ListTile(
+                leading: const Icon(Icons.bar_chart),
+                title: Text(l10n.chatStatistics),
+                contentPadding: EdgeInsets.zero,
+              ),
+            ),
+            PopupMenuItem(
               value: 'export',
               child: ListTile(
                 leading: const Icon(Icons.upload),
@@ -904,13 +1033,20 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           onSelected: (value) {
             switch (value) {
               case 'character':
-                // Navigate to character
+                final characterId =
+                    ref.read(activeChatProvider).character?.id;
+                if (characterId != null) {
+                  context.push('/characters/$characterId');
+                }
                 break;
               case 'author_note':
                 showAuthorNoteDialog(context);
                 break;
               case 'bookmarks':
                 _showBookmarksDialog(context);
+                break;
+              case 'statistics':
+                context.push('/chat/${widget.chatId}/statistics');
                 break;
               case 'export':
                 _showExportDialog();
@@ -1039,6 +1175,27 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                 _showEditMessageDialog(message);
               },
             ),
+            if (ref.read(ttsSettingsProvider).enabled)
+              ListTile(
+                leading: Icon(ref.read(ttsSpeakingProvider)
+                    ? Icons.stop
+                    : Icons.volume_up),
+                title: Text(ref.read(ttsSpeakingProvider)
+                    ? l10n.stopSpeaking
+                    : l10n.readAloud),
+                onTap: () {
+                  Navigator.pop(context);
+                  if (ref.read(ttsSpeakingProvider)) {
+                    ref.read(ttsStopProvider)();
+                  } else {
+                    ref.read(ttsSpeakProvider)(
+                      message.content,
+                      characterId:
+                          ref.read(activeChatProvider).character?.id,
+                    );
+                  }
+                },
+              ),
             ListTile(
               leading: Icon(
                 message.isHidden ? Icons.visibility : Icons.visibility_off,
@@ -1053,6 +1210,27 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                     .toggleMessageHidden(message.id);
               },
             ),
+            if (ref.read(translationSettingsProvider).enabled)
+              ListTile(
+                leading: const Icon(Icons.translate),
+                title: Text(ref
+                        .read(messageTranslationsProvider)
+                        .containsKey(message.id)
+                    ? l10n.showOriginalMessage
+                    : l10n.translateMessage),
+                onTap: () {
+                  Navigator.pop(context);
+                  final translations =
+                      ref.read(messageTranslationsProvider.notifier);
+                  if (ref
+                      .read(messageTranslationsProvider)
+                      .containsKey(message.id)) {
+                    translations.clearTranslation(message.id);
+                  } else {
+                    translations.translateMessage(message.id, message.content);
+                  }
+                },
+              ),
             if (message.role != MessageRole.system)
               ListTile(
                 leading: const Icon(Icons.refresh),
@@ -1390,6 +1568,21 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                   ),
                 ),
                 const SizedBox(width: 8),
+                // Voice input (when STT is enabled in settings)
+                if (ref.watch(sttSettingsProvider.select((s) => s.enabled)) &&
+                    !chatState.isGenerating)
+                  IconButton(
+                    onPressed: _toggleVoiceInput,
+                    icon: Icon(
+                      ref.watch(sttListeningProvider)
+                          ? Icons.mic
+                          : Icons.mic_none,
+                      color: ref.watch(sttListeningProvider)
+                          ? Colors.red
+                          : AppTheme.textMuted,
+                    ),
+                    tooltip: AppLocalizations.of(context).voiceInput,
+                  ),
                 // Show stop button when generating, send button otherwise
                 if (chatState.isGenerating)
                   IconButton.filled(
@@ -2136,7 +2329,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   }
 }
 
-class _MessageBubble extends StatefulWidget {
+class _MessageBubble extends ConsumerStatefulWidget {
   final ChatMessage message;
   final int messageIndex;
   final String chatId;
@@ -2179,10 +2372,10 @@ class _MessageBubble extends StatefulWidget {
   });
 
   @override
-  State<_MessageBubble> createState() => _MessageBubbleState();
+  ConsumerState<_MessageBubble> createState() => _MessageBubbleState();
 }
 
-class _MessageBubbleState extends State<_MessageBubble> {
+class _MessageBubbleState extends ConsumerState<_MessageBubble> {
   bool _isEditing = false;
   late TextEditingController _editController;
 
@@ -2202,6 +2395,10 @@ class _MessageBubbleState extends State<_MessageBubble> {
   Widget build(BuildContext context) {
     final isUser = widget.message.role == MessageRole.user;
     final hasSwipes = widget.message.swipes.length > 1;
+    final translation =
+        ref.watch(messageTranslationsProvider)[widget.message.id];
+    final showOriginal =
+        ref.watch(translationSettingsProvider.select((s) => s.showOriginal));
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
@@ -2246,7 +2443,9 @@ class _MessageBubbleState extends State<_MessageBubble> {
                                 const _TypingIndicator()
                               else
                                 MessageContentWidget(
-                                  content: widget.message.content,
+                                  content: translation != null && !showOriginal
+                                      ? translation.translatedText
+                                      : widget.message.content,
                                   textColor: isUser
                                       ? Colors.white
                                       : AppTheme.textPrimary,
@@ -2259,6 +2458,29 @@ class _MessageBubbleState extends State<_MessageBubble> {
                                   isStreaming: widget.isGenerating,
                                   messageId: widget.message.id,
                                 ),
+                              // Translation shown below the original text
+                              if (translation != null && showOriginal) ...[
+                                const SizedBox(height: 8),
+                                Container(
+                                  height: 1,
+                                  color: (isUser
+                                          ? Colors.white
+                                          : AppTheme.textMuted)
+                                      .withValues(alpha: 0.3),
+                                ),
+                                const SizedBox(height: 8),
+                                MessageContentWidget(
+                                  content: translation.translatedText,
+                                  textColor: isUser
+                                      ? Colors.white
+                                      : AppTheme.textPrimary,
+                                  selectable: false,
+                                  onLongPress: () =>
+                                      _showMessageOptions(context),
+                                  messageId:
+                                      '${widget.message.id}-translation',
+                                ),
+                              ],
                             ],
                           ),
                     ),
@@ -2575,6 +2797,12 @@ class _MessageBubbleState extends State<_MessageBubble> {
 
   void _showMessageOptions(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final translationEnabled = ref.read(translationSettingsProvider).enabled;
+    final hasTranslation =
+        ref.read(messageTranslationsProvider).containsKey(widget.message.id);
+    final ttsEnabled = ref.read(ttsSettingsProvider).enabled;
+    final isSpeaking = ref.read(ttsSpeakingProvider);
+    final hasLogprobs = ref.read(hasLogprobsProvider(widget.message.id));
 
     showModalBottomSheet(
       context: context,
@@ -2583,7 +2811,8 @@ class _MessageBubbleState extends State<_MessageBubble> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
       builder: (context) => SafeArea(
-        child: Column(
+        child: SingleChildScrollView(
+          child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             // Handle bar
@@ -2613,6 +2842,27 @@ class _MessageBubbleState extends State<_MessageBubble> {
                 );
               },
             ),
+
+            // Read aloud / stop speaking
+            if (ttsEnabled)
+              ListTile(
+                leading: Icon(
+                  isSpeaking ? Icons.stop : Icons.volume_up,
+                  color: AppTheme.textSecondary,
+                ),
+                title: Text(isSpeaking ? l10n.stopSpeaking : l10n.readAloud),
+                onTap: () {
+                  Navigator.pop(context);
+                  if (isSpeaking) {
+                    ref.read(ttsStopProvider)();
+                  } else {
+                    ref.read(ttsSpeakProvider)(
+                      widget.message.content,
+                      characterId: widget.character?.id,
+                    );
+                  }
+                },
+              ),
 
             // Edit
             ListTile(
@@ -2688,6 +2938,38 @@ class _MessageBubbleState extends State<_MessageBubble> {
               },
             ),
 
+            // Translate / show original
+            if (translationEnabled)
+              ListTile(
+                leading: const Icon(Icons.translate,
+                    color: AppTheme.textSecondary),
+                title: Text(hasTranslation
+                    ? l10n.showOriginalMessage
+                    : l10n.translateMessage),
+                onTap: () {
+                  Navigator.pop(context);
+                  if (hasTranslation) {
+                    ref
+                        .read(messageTranslationsProvider.notifier)
+                        .clearTranslation(widget.message.id);
+                  } else {
+                    _translateMessage();
+                  }
+                },
+              ),
+
+            // Token probabilities (when logprobs were returned)
+            if (hasLogprobs)
+              ListTile(
+                leading: const Icon(Icons.bar_chart,
+                    color: AppTheme.textSecondary),
+                title: Text(l10n.tokenProbabilities),
+                onTap: () {
+                  Navigator.pop(context);
+                  _showLogprobsPanel(context);
+                },
+              ),
+
             // Generate image (if enabled)
             if (widget.onGenerateImage != null)
               ListTile(
@@ -2728,6 +3010,37 @@ class _MessageBubbleState extends State<_MessageBubble> {
 
             const SizedBox(height: 8),
           ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _translateMessage() async {
+    final l10n = AppLocalizations.of(context);
+    final result = await ref
+        .read(messageTranslationsProvider.notifier)
+        .translateMessage(widget.message.id, widget.message.content);
+    if (result == null && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.translationFailed)),
+      );
+    }
+  }
+
+  void _showLogprobsPanel(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppTheme.darkCard,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (sheetContext) => SizedBox(
+        height: MediaQuery.of(sheetContext).size.height * 0.6,
+        child: LogprobsPanel(
+          messageId: widget.message.id,
+          onClose: () => Navigator.pop(sheetContext),
         ),
       ),
     );

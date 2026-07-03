@@ -479,11 +479,7 @@ final llmConfigProvider = StateNotifierProvider<LLMConfigNotifier, LLMConfig>((r
 class AppSettings {
   final String theme;
   final String language;
-  final bool enableNotifications;
-  final bool enableHaptics;
-  final String defaultCharacterSortOrder;
   final bool confirmBeforeDelete;
-  final bool autoSaveChats;
   final bool enableDebugLog;
   final bool useCharacterAvatarAsBackground;
   final bool enableBackgroundBlur;
@@ -493,11 +489,7 @@ class AppSettings {
   const AppSettings({
     this.theme = 'dark',
     this.language = 'en',
-    this.enableNotifications = true,
-    this.enableHaptics = true,
-    this.defaultCharacterSortOrder = 'name',
     this.confirmBeforeDelete = true,
-    this.autoSaveChats = true,
     this.enableDebugLog = false,
     this.useCharacterAvatarAsBackground = true,
     this.enableBackgroundBlur = false,
@@ -508,11 +500,7 @@ class AppSettings {
   AppSettings copyWith({
     String? theme,
     String? language,
-    bool? enableNotifications,
-    bool? enableHaptics,
-    String? defaultCharacterSortOrder,
     bool? confirmBeforeDelete,
-    bool? autoSaveChats,
     bool? enableDebugLog,
     bool? useCharacterAvatarAsBackground,
     bool? enableBackgroundBlur,
@@ -522,12 +510,7 @@ class AppSettings {
     return AppSettings(
       theme: theme ?? this.theme,
       language: language ?? this.language,
-      enableNotifications: enableNotifications ?? this.enableNotifications,
-      enableHaptics: enableHaptics ?? this.enableHaptics,
-      defaultCharacterSortOrder:
-          defaultCharacterSortOrder ?? this.defaultCharacterSortOrder,
       confirmBeforeDelete: confirmBeforeDelete ?? this.confirmBeforeDelete,
-      autoSaveChats: autoSaveChats ?? this.autoSaveChats,
       enableDebugLog: enableDebugLog ?? this.enableDebugLog,
       useCharacterAvatarAsBackground: useCharacterAvatarAsBackground ?? this.useCharacterAvatarAsBackground,
       enableBackgroundBlur: enableBackgroundBlur ?? this.enableBackgroundBlur,
@@ -539,11 +522,7 @@ class AppSettings {
   Map<String, dynamic> toJson() => {
         'theme': theme,
         'language': language,
-        'enableNotifications': enableNotifications,
-        'enableHaptics': enableHaptics,
-        'defaultCharacterSortOrder': defaultCharacterSortOrder,
         'confirmBeforeDelete': confirmBeforeDelete,
-        'autoSaveChats': autoSaveChats,
         'enableDebugLog': enableDebugLog,
         'useCharacterAvatarAsBackground': useCharacterAvatarAsBackground,
         'enableBackgroundBlur': enableBackgroundBlur,
@@ -555,12 +534,7 @@ class AppSettings {
     return AppSettings(
       theme: json['theme'] as String? ?? 'dark',
       language: json['language'] as String? ?? 'en',
-      enableNotifications: json['enableNotifications'] as bool? ?? true,
-      enableHaptics: json['enableHaptics'] as bool? ?? true,
-      defaultCharacterSortOrder:
-          json['defaultCharacterSortOrder'] as String? ?? 'name',
       confirmBeforeDelete: json['confirmBeforeDelete'] as bool? ?? true,
-      autoSaveChats: json['autoSaveChats'] as bool? ?? true,
       enableDebugLog: json['enableDebugLog'] as bool? ?? false,
       useCharacterAvatarAsBackground: json['useCharacterAvatarAsBackground'] as bool? ?? true,
       enableBackgroundBlur: json['enableBackgroundBlur'] as bool? ?? false,
@@ -639,28 +613,8 @@ class AppSettingsNotifier extends StateNotifier<AppSettings> {
     _saveSettings();
   }
 
-  void updateNotifications(bool enabled) {
-    state = state.copyWith(enableNotifications: enabled);
-    _saveSettings();
-  }
-
-  void updateHaptics(bool enabled) {
-    state = state.copyWith(enableHaptics: enabled);
-    _saveSettings();
-  }
-
-  void updateCharacterSortOrder(String order) {
-    state = state.copyWith(defaultCharacterSortOrder: order);
-    _saveSettings();
-  }
-
   void updateConfirmBeforeDelete(bool confirm) {
     state = state.copyWith(confirmBeforeDelete: confirm);
-    _saveSettings();
-  }
-
-  void updateAutoSaveChats(bool autoSave) {
-    state = state.copyWith(autoSaveChats: autoSave);
     _saveSettings();
   }
 

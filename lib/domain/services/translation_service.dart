@@ -246,9 +246,9 @@ class TranslationService {
     );
 
     // Response shape: [[["translated","original",...], ...], null, "detectedLang", ...]
-    final data = response.data is String
+    final data = (response.data is String
         ? jsonDecode(response.data as String)
-        : response.data;
+        : response.data) as List<dynamic>;
     final segments = data[0] as List<dynamic>;
     final translated =
         segments.map((s) => (s as List<dynamic>)[0] as String? ?? '').join();

@@ -107,6 +107,48 @@ class TranslationSettingsNotifier extends StateNotifier<TranslationSettings> {
   }
 }
 
+/// In-memory translations of chat messages, keyed by message ID.
+/// Cleared when translation settings change (stale target language etc.).
+class MessageTranslationsNotifier
+    extends StateNotifier<Map<String, TranslationResult>> {
+  final TranslationService _service;
+  final Set<String> _inFlight = {};
+
+  MessageTranslationsNotifier(this._service) : super(const {});
+
+  bool isTranslating(String messageId) => _inFlight.contains(messageId);
+
+  Future<TranslationResult?> translateMessage(
+      String messageId, String text) async {
+    if (_inFlight.contains(messageId)) return null;
+    _inFlight.add(messageId);
+    try {
+      final result = await _service.translate(text);
+      if (result != null && mounted) {
+        state = {...state, messageId: result};
+      }
+      return result;
+    } finally {
+      _inFlight.remove(messageId);
+    }
+  }
+
+  void clearTranslation(String messageId) {
+    if (!state.containsKey(messageId)) return;
+    state = Map<String, TranslationResult>.from(state)..remove(messageId);
+  }
+}
+
+/// Provider for per-message chat translations
+final messageTranslationsProvider = StateNotifierProvider<
+    MessageTranslationsNotifier, Map<String, TranslationResult>>((ref) {
+  // Rebuild (and drop stale translations) when settings change; also
+  // guarantees the settings notifier is initialized so the service has
+  // up-to-date settings.
+  ref.watch(translationSettingsProvider);
+  return MessageTranslationsNotifier(ref.watch(translationServiceProvider));
+});
+
 /// Provider for translating text
 final translateTextProvider = FutureProvider.family<TranslationResult?, TranslateParams>((ref, params) async {
   final service = ref.watch(translationServiceProvider);

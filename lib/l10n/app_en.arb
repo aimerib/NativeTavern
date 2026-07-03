@@ -6305,5 +6305,55 @@
   "bulkImportFailedFiles": "Failed files:",
   "@bulkImportFailedFiles": {
     "description": "Header above the list of files that failed to import"
+  },
+
+  "translateMessage": "Translate",
+  "@translateMessage": {
+    "description": "Message menu action to translate the message"
+  },
+
+  "showOriginalMessage": "Show original",
+  "@showOriginalMessage": {
+    "description": "Message menu action to remove the translation and show the original text"
+  },
+
+  "translationFailed": "Translation failed",
+  "@translationFailed": {
+    "description": "Snackbar shown when a message could not be translated"
+  },
+
+  "readAloud": "Read aloud",
+  "@readAloud": {
+    "description": "Message menu action to speak the message with TTS"
+  },
+
+  "stopSpeaking": "Stop speaking",
+  "@stopSpeaking": {
+    "description": "Message menu action to stop TTS playback"
+  },
+
+  "voiceInput": "Voice input",
+  "@voiceInput": {
+    "description": "Tooltip for the microphone button in the chat input"
+  },
+
+  "backgroundUpdated": "Background updated",
+  "@backgroundUpdated": {
+    "description": "Snackbar shown when /bg sets a new chat background"
+  },
+
+  "backgroundCleared": "Background cleared",
+  "@backgroundCleared": {
+    "description": "Snackbar shown when /bg clears the chat background"
+  },
+
+  "invalidBackgroundArgument": "Provide an image URL, a file path, or \"clear\"",
+  "@invalidBackgroundArgument": {
+    "description": "Snackbar shown when /bg receives an argument it cannot use"
+  },
+
+  "tokenProbabilities": "Token Probabilities",
+  "@tokenProbabilities": {
+    "description": "Logprobs settings entry and message menu action"
   }
 }

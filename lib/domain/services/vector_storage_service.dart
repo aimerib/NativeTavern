@@ -277,6 +277,13 @@ class VectorStorageService {
     return collection;
   }
 
+  /// Replace all in-memory collections (used when restoring from disk)
+  void loadCollections(List<VectorCollection> collections) {
+    _collections
+      ..clear()
+      ..addEntries(collections.map((c) => MapEntry(c.id, c)));
+  }
+
   /// Get statistics for a collection
   CollectionStatistics getStatistics(String collectionId) {
     final collection = _collections[collectionId];

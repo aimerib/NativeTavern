@@ -144,6 +144,37 @@ class VectorStorageSettingsScreen extends ConsumerWidget {
               ref.read(vectorStorageSettingsProvider.notifier).setEmbeddingModel(value);
             },
           ),
+          const SizedBox(height: 16),
+          TextFormField(
+            initialValue: settings.embeddingApiKey,
+            decoration: const InputDecoration(
+              labelText: 'API Key',
+              hintText: 'Required for OpenAI and Cohere',
+              border: OutlineInputBorder(),
+            ),
+            obscureText: true,
+            enabled: settings.enabled,
+            onChanged: (value) {
+              ref
+                  .read(vectorStorageSettingsProvider.notifier)
+                  .setEmbeddingApiKey(value.trim().isEmpty ? null : value.trim());
+            },
+          ),
+          const SizedBox(height: 16),
+          TextFormField(
+            initialValue: settings.embeddingEndpoint,
+            decoration: const InputDecoration(
+              labelText: 'Endpoint (optional)',
+              hintText: 'e.g. http://localhost:11434/v1',
+              border: OutlineInputBorder(),
+            ),
+            enabled: settings.enabled,
+            onChanged: (value) {
+              ref
+                  .read(vectorStorageSettingsProvider.notifier)
+                  .setEmbeddingEndpoint(value.trim().isEmpty ? null : value.trim());
+            },
+          ),
 
           const Divider(height: 32),
 
@@ -561,15 +592,36 @@ class _CollectionDetails extends ConsumerWidget {
             child: const Text('Cancel'),
           ),
           TextButton(
-            onPressed: () {
-              if (controller.text.trim().isNotEmpty) {
-                ref.read(vectorCollectionsProvider.notifier).addDocument(
-                  collectionId: collectionId,
-                  content: controller.text.trim(),
+            onPressed: () async {
+              final content = controller.text.trim();
+              if (content.isEmpty) return;
+              Navigator.pop(context);
+              final messenger = ScaffoldMessenger.of(context);
+              messenger.showSnackBar(
+                const SnackBar(content: Text('Embedding document...')),
+              );
+              try {
+                final chunks = await ref
+                    .read(vectorCollectionsProvider.notifier)
+                    .addDocumentWithEmbedding(
+                      collectionId: collectionId,
+                      content: content,
+                    );
+                messenger.hideCurrentSnackBar();
+                messenger.showSnackBar(
+                  SnackBar(
+                      content: Text('Document added ($chunks chunks embedded)')),
                 );
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Document added')),
+              } catch (e) {
+                // Keep the raw text so nothing is lost, but tell the user
+                // the embedding step failed
+                ref.read(vectorCollectionsProvider.notifier).addDocument(
+                      collectionId: collectionId,
+                      content: content,
+                    );
+                messenger.hideCurrentSnackBar();
+                messenger.showSnackBar(
+                  SnackBar(content: Text('Embedding failed: $e')),
                 );
               }
             },

@@ -138,6 +138,12 @@ class SettingsScreen extends ConsumerWidget {
             onTap: () => context.push(AppRoutes.cfgScaleSettings),
           ),
           ListTile(
+            leading: const Icon(Icons.bar_chart),
+            title: Text(l10n.tokenProbabilities),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => context.push(AppRoutes.logprobsSettings),
+          ),
+          ListTile(
             leading: const Icon(Icons.token),
             title: Text(l10n.tokenizer),
             trailing: const Icon(Icons.chevron_right),

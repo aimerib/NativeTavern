@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter_tts/flutter_tts.dart';
 
 /// TTS Provider types
 enum TTSProvider {
@@ -174,6 +175,8 @@ class TTSService {
   TTSSettings _settings = const TTSSettings();
   final Map<String, CharacterVoiceSettings> _characterVoices = {};
 
+  final FlutterTts _flutterTts = FlutterTts();
+
   /// Available voices (populated after initialization)
   List<TTSVoice> _availableVoices = [];
 
@@ -193,54 +196,61 @@ class TTSService {
     if (_isInitialized) return;
 
     try {
-      // For system TTS, we would use flutter_tts package
-      // For now, we'll set up the structure and add actual implementation later
-      _availableVoices = _getDefaultVoices();
+      // Make speak() futures resolve when speech actually finishes so the
+      // queue plays messages sequentially.
+      await _flutterTts.awaitSpeakCompletion(true);
+      _flutterTts.setErrorHandler((message) {
+        _isSpeaking = false;
+        onError?.call('TTS error: $message');
+      });
+      _flutterTts.setCancelHandler(() {
+        _isSpeaking = false;
+        onCancel?.call();
+      });
+
+      _availableVoices = await _loadSystemVoices();
       _isInitialized = true;
     } catch (e) {
       onError?.call('Failed to initialize TTS: $e');
     }
   }
 
-  /// Get default system voices (placeholder)
-  List<TTSVoice> _getDefaultVoices() {
-    return [
+  /// Load the voices installed on the device
+  Future<List<TTSVoice>> _loadSystemVoices() async {
+    final voices = <TTSVoice>[
       const TTSVoice(
         id: 'default',
         name: 'Default',
-        language: 'en-US',
-        gender: 'neutral',
-        provider: TTSProvider.system,
-      ),
-      const TTSVoice(
-        id: 'en-us-female',
-        name: 'English (US) Female',
-        language: 'en-US',
-        gender: 'female',
-        provider: TTSProvider.system,
-      ),
-      const TTSVoice(
-        id: 'en-us-male',
-        name: 'English (US) Male',
-        language: 'en-US',
-        gender: 'male',
-        provider: TTSProvider.system,
-      ),
-      const TTSVoice(
-        id: 'en-gb-female',
-        name: 'English (UK) Female',
-        language: 'en-GB',
-        gender: 'female',
-        provider: TTSProvider.system,
-      ),
-      const TTSVoice(
-        id: 'en-gb-male',
-        name: 'English (UK) Male',
-        language: 'en-GB',
-        gender: 'male',
         provider: TTSProvider.system,
       ),
     ];
+
+    try {
+      final rawVoices = await _flutterTts.getVoices;
+      if (rawVoices is List) {
+        for (final raw in rawVoices) {
+          final voice = Map<Object?, Object?>.from(raw as Map);
+          final name = voice['name'] as String?;
+          if (name == null || name.isEmpty) continue;
+          voices.add(TTSVoice(
+            id: name,
+            name: name,
+            language: voice['locale'] as String?,
+            provider: TTSProvider.system,
+          ));
+        }
+      }
+    } catch (e) {
+      debugPrint('TTS: Failed to load system voices: $e');
+    }
+
+    // Sort by locale then name, keeping Default first
+    final rest = voices.sublist(1)
+      ..sort((a, b) {
+        final byLocale = (a.language ?? '').compareTo(b.language ?? '');
+        return byLocale != 0 ? byLocale : a.name.compareTo(b.name);
+      });
+    return [voices.first, ...rest];
   }
 
   /// Update settings
@@ -288,6 +298,12 @@ class TTSService {
 
   /// Actually speak the text
   Future<void> _speakText(String text, {String? characterId}) async {
+    if (_settings.provider != TTSProvider.system) {
+      onError?.call(
+          '${_settings.provider.displayName} TTS is not supported yet');
+      return;
+    }
+
     _isSpeaking = true;
     onStart?.call();
 
@@ -299,13 +315,26 @@ class TTSService {
       final pitch = charVoice?.pitch ?? _settings.pitch;
       final volume = charVoice?.volume ?? _settings.volume;
 
-      // Here we would call the actual TTS implementation
-      // For now, simulate with a delay
-      debugPrint('TTS: Speaking "$text" with voice=$voiceId, rate=$rate, pitch=$pitch, volume=$volume');
-      
-      // Simulate speech duration based on text length
-      final duration = Duration(milliseconds: text.length * 50);
-      await Future.delayed(duration);
+      if (voiceId != null && voiceId != 'default') {
+        final voice = _availableVoices.firstWhere(
+          (v) => v.id == voiceId,
+          orElse: () => _availableVoices.first,
+        );
+        if (voice.id != 'default') {
+          await _flutterTts.setVoice({
+            'name': voice.id,
+            if (voice.language != null) 'locale': voice.language!,
+          });
+        }
+      }
+      // App rate is 0.5-2.0 with 1.0 normal; the platform engines treat
+      // 0.5 as normal speed.
+      await _flutterTts.setSpeechRate((rate * 0.5).clamp(0.1, 1.0));
+      await _flutterTts.setPitch(pitch.clamp(0.5, 2.0));
+      await _flutterTts.setVolume(volume.clamp(0.0, 1.0));
+
+      // Resolves when speech finishes (awaitSpeakCompletion is enabled)
+      await _flutterTts.speak(text);
 
       onComplete?.call();
     } catch (e) {
@@ -318,6 +347,7 @@ class TTSService {
   /// Stop speaking
   Future<void> stop() async {
     _queue.clear();
+    await _flutterTts.stop();
     if (_isSpeaking) {
       _isSpeaking = false;
       onCancel?.call();
@@ -326,15 +356,11 @@ class TTSService {
 
   /// Pause speaking
   Future<void> pause() async {
-    // Would pause the current speech
-    debugPrint('TTS: Pause');
+    await _flutterTts.pause();
   }
 
-  /// Resume speaking
-  Future<void> resume() async {
-    // Would resume the paused speech
-    debugPrint('TTS: Resume');
-  }
+  /// Resume speaking (not supported by platform engines; restart instead)
+  Future<void> resume() async {}
 
   /// Clean text for TTS
   String _cleanTextForTTS(String text) {

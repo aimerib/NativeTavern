@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../../data/models/tag.dart';
 import '../../providers/character_filter_providers.dart';
 import '../../providers/tag_providers.dart';
-import '../../screens/tags/tags_screen.dart';
+import '../../router/app_router.dart';
 import '../../theme/app_theme.dart';
 import 'package:native_tavern/l10n/generated/app_localizations.dart';
 
@@ -269,10 +270,7 @@ class _TagFilterSheet extends ConsumerWidget {
                   label: Text(AppLocalizations.of(context)!.manage),
                   onPressed: () {
                     Navigator.pop(context);
-                    Navigator.push<void>(
-                      context,
-                      MaterialPageRoute<void>(builder: (_) => const TagsScreen()),
-                    );
+                    context.push(AppRoutes.tags);
                   },
                 ),
                 if (totalSelected > 0)
@@ -322,10 +320,7 @@ class _TagFilterSheet extends ConsumerWidget {
                               label: Text(AppLocalizations.of(context)!.createTags),
                               onPressed: () {
                                 Navigator.pop(context);
-                                Navigator.push<void>(
-                                  context,
-                                  MaterialPageRoute<void>(builder: (_) => const TagsScreen()),
-                                );
+                                context.push(AppRoutes.tags);
                               },
                             ),
                           ],
@@ -393,7 +388,15 @@ class _TagFilterSheet extends ConsumerWidget {
                   loading: () => const SizedBox.shrink(),
                   error: (e, _) => const SizedBox.shrink(),
                   data: (legacyTags) {
-                    if (legacyTags.isEmpty) return const SizedBox.shrink();
+                    // Same-name tags are unified: legacy card tags covered
+                    // by a managed tag are listed only in the section above.
+                    final managedNames = (newTagsAsync.valueOrNull ?? [])
+                        .map((t) => t.name.toLowerCase())
+                        .toSet();
+                    final visibleTags = legacyTags
+                        .where((t) => !managedNames.contains(t.toLowerCase()))
+                        .toList();
+                    if (visibleTags.isEmpty) return const SizedBox.shrink();
 
                     final legacyCounts = legacyTagCountsAsync.valueOrNull ?? {};
 
@@ -412,7 +415,7 @@ class _TagFilterSheet extends ConsumerWidget {
                             ),
                           ),
                         ),
-                        ...legacyTags.map((tag) {
+                        ...visibleTags.map((tag) {
                           final isSelected = filterState.selectedLegacyTags.contains(tag);
                           final count = legacyCounts[tag] ?? 0;
 

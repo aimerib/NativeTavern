@@ -3708,4 +3708,32 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get bulkImportFailedFiles => 'Failed files:';
+
+  @override
+  String get translateMessage => 'Translate';
+
+  @override
+  String get showOriginalMessage => 'Show original';
+
+  @override
+  String get translationFailed => 'Translation failed';
+
+  @override
+  String get readAloud => 'Read aloud';
+
+  @override
+  String get stopSpeaking => 'Stop speaking';
+
+  @override
+  String get backgroundUpdated => 'Background updated';
+
+  @override
+  String get backgroundCleared => 'Background cleared';
+
+  @override
+  String get invalidBackgroundArgument =>
+      'Provide an image URL, a file path, or \"clear\"';
+
+  @override
+  String get tokenProbabilities => 'Token Probabilities';
 }

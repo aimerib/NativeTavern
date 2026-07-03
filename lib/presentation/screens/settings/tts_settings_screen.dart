@@ -89,7 +89,12 @@ class TTSSettingsScreen extends ConsumerWidget {
                           }
                         }
                       : null,
-                  items: TTSProvider.values.map((provider) {
+                  // Only system TTS is implemented; keep a previously
+                  // selected provider visible so the dropdown stays valid
+                  items: TTSProvider.values
+                      .where((p) =>
+                          p == TTSProvider.system || p == settings.provider)
+                      .map((provider) {
                     return DropdownMenuItem(
                       value: provider,
                       child: Text(provider.displayName),

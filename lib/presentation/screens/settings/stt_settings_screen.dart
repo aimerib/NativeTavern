@@ -125,7 +125,12 @@ class STTSettingsScreen extends ConsumerWidget {
                           }
                         }
                       : null,
-                  items: STTProvider.values.map((provider) {
+                  // Only system STT is implemented; keep a previously
+                  // selected provider visible so the dropdown stays valid
+                  items: STTProvider.values
+                      .where((p) =>
+                          p == STTProvider.system || p == settings.provider)
+                      .map((provider) {
                     return DropdownMenuItem(
                       value: provider,
                       child: Text(provider.displayName),

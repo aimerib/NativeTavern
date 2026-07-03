@@ -7,8 +7,11 @@ import 'package:native_tavern/data/models/character.dart';
 import 'package:native_tavern/data/repositories/character_repository.dart';
 import 'package:native_tavern/domain/services/character_export_service.dart';
 import 'package:native_tavern/l10n/generated/app_localizations.dart';
+import 'package:native_tavern/presentation/providers/character_filter_providers.dart';
 import 'package:native_tavern/presentation/providers/character_providers.dart';
 import 'package:native_tavern/presentation/providers/chat_providers.dart';
+import 'package:native_tavern/presentation/providers/tag_providers.dart';
+import 'package:native_tavern/presentation/router/app_router.dart';
 import 'package:native_tavern/presentation/theme/app_theme.dart';
 import 'package:native_tavern/presentation/widgets/common/character_avatar_image.dart';
 import 'package:native_tavern/presentation/widgets/common/confirm_delete_dialog.dart';
@@ -122,7 +125,40 @@ class _CharacterDetailContentState extends ConsumerState<_CharacterDetailContent
       case 'export_charx':
         await _exportCharacter(character, CharacterExportFormat.charx);
         break;
+      case 'sprites':
+        if (mounted) {
+          context.push(
+            Uri(
+              path: '/characters/${character.id}/sprites',
+              queryParameters: {'name': character.name},
+            ).toString(),
+          );
+        }
+        break;
     }
+  }
+
+  /// Jump to the character list filtered to characters sharing [tag]
+  Future<void> _showCharactersWithTag(String tag) async {
+    // Prefer the managed tag with the same name so the filter chip shows
+    // its color; either selection matches both tag systems.
+    final tags = await ref.read(tagRepositoryProvider).getAllTags();
+    String? managedId;
+    for (final t in tags) {
+      if (t.name.toLowerCase() == tag.toLowerCase()) {
+        managedId = t.id;
+        break;
+      }
+    }
+    if (!mounted) return;
+    final notifier = ref.read(characterFilterProvider.notifier)
+      ..clearFilters();
+    if (managedId != null) {
+      notifier.setTagIds({managedId});
+    } else {
+      notifier.setTags([tag]);
+    }
+    context.go(AppRoutes.characters);
   }
 
   Future<void> _exportCharacter(
@@ -234,6 +270,10 @@ class _CharacterDetailContentState extends ConsumerState<_CharacterDetailContent
                     child: Text(l10n.exportAsCharx),
                   ),
                   PopupMenuItem(
+                    value: 'sprites',
+                    child: Text(l10n.sprites),
+                  ),
+                  PopupMenuItem(
                     value: 'duplicate',
                     child: Text(l10n.duplicate),
                   ),
@@ -256,9 +296,10 @@ class _CharacterDetailContentState extends ConsumerState<_CharacterDetailContent
                     Wrap(
                       spacing: 8,
                       runSpacing: 4,
-                      children: character.tags.map((tag) => Chip(
+                      children: character.tags.map((tag) => ActionChip(
                         label: Text(tag),
                         backgroundColor: AppTheme.primaryColor.withValues(alpha: 0.2),
+                        onPressed: () => _showCharactersWithTag(tag),
                       )).toList(),
                     ),
                   if (character.tags.isNotEmpty) const SizedBox(height: 16),

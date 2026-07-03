@@ -17,10 +17,14 @@ import 'package:native_tavern/data/repositories/persona_repository.dart';
 import 'package:native_tavern/domain/services/llm_service.dart';
 import 'package:native_tavern/domain/services/macro_service.dart';
 import 'package:native_tavern/domain/services/chat_summarization_service.dart';
+import 'package:native_tavern/presentation/providers/cfg_scale_providers.dart';
 import 'package:native_tavern/presentation/providers/group_providers.dart';
+import 'package:native_tavern/presentation/providers/logit_bias_providers.dart';
+import 'package:native_tavern/presentation/providers/logprobs_providers.dart';
 import 'package:native_tavern/presentation/providers/persona_providers.dart';
 import 'package:native_tavern/presentation/providers/prompt_manager_providers.dart';
 import 'package:native_tavern/presentation/providers/settings_providers.dart';
+import 'package:native_tavern/presentation/providers/vector_storage_providers.dart';
 import 'package:native_tavern/presentation/providers/world_info_providers.dart';
 
 // Note: Repository providers are defined in their respective repository files
@@ -116,6 +120,62 @@ class ActiveChatNotifier extends StateNotifier<ActiveChatState> {
         _summarizationService = summarizationService,
         _ref = ref,
         super(const ActiveChatState());
+
+  /// Merge the logit bias / CFG scale / logprobs settings into the request
+  /// config. These live in their own settings providers rather than on the
+  /// persisted LLM config, so they are plumbed in at request time.
+  LLMConfig _withAdvancedSampling(LLMConfig config) {
+    var result = config;
+
+    final logitBiasSettings = _ref.read(logitBiasSettingsProvider);
+    if (logitBiasSettings.enabled) {
+      final service = _ref.read(logitBiasServiceProvider);
+      // No local tokenizer is available, so only raw token-ID entries
+      // ("[123, 456]") can be applied; plain-text entries are skipped.
+      final bias = service.toOpenAIFormat(
+          logitBiasSettings.activeEntries, (text, type) => const []);
+      if (bias.isNotEmpty) {
+        result = result.copyWith(logitBias: bias);
+      }
+    }
+
+    final cfgSettings = _ref.read(cfgScaleSettingsProvider);
+    if (cfgSettings.enabled) {
+      final effective = _ref.read(effectiveCFGSettingsProvider(CFGContext(
+        characterId: state.character?.id,
+        chatId: state.chat?.id,
+      )));
+      if (effective.isActive) {
+        result = result.copyWith(
+          guidanceScale: effective.guidanceScale,
+          negativePrompt: effective.negativePrompt,
+        );
+      }
+    }
+
+    final logprobsSettings = _ref.read(logprobsSettingsProvider);
+    if (logprobsSettings.requestTokenProbabilities) {
+      result = result.copyWith(
+        requestLogprobs: true,
+        topLogprobs: logprobsSettings.topLogprobsCount,
+      );
+    }
+
+    return result;
+  }
+
+  /// Store token logprobs from a non-streaming response so the logprobs
+  /// panel can display them.
+  void _storeLogprobs(String messageId, LLMResponse response) {
+    if (response.rawResponse == null) return;
+    final parsed = _ref.read(logprobsParserProvider).parseOpenAI(
+          messageId: messageId,
+          response: response.rawResponse!,
+        );
+    if (parsed != null) {
+      _ref.read(messageLogprobsProvider.notifier).storeLogprobs(parsed);
+    }
+  }
 
   /// Cancel current generation
   Future<void> cancelGeneration() async {
@@ -354,6 +414,26 @@ class ActiveChatNotifier extends StateNotifier<ActiveChatState> {
     }
   }
 
+  /// Add a system/narrator message without triggering generation
+  Future<void> addSystemMessage(String content) async {
+    if (state.chat == null || content.isEmpty) return;
+
+    final systemMessage = ChatMessage(
+      id: _generateId(),
+      chatId: state.chat!.id,
+      role: MessageRole.system,
+      content: content,
+      timestamp: DateTime.now(),
+      swipes: [content],
+      currentSwipeIndex: 0,
+    );
+
+    await _chatRepository.addMessage(systemMessage);
+    state = state.copyWith(
+      messages: [...state.messages, systemMessage],
+    );
+  }
+
   /// Send a user message and get AI response
   Future<void> sendMessage(
     String content,
@@ -419,7 +499,8 @@ class ActiveChatNotifier extends StateNotifier<ActiveChatState> {
         final contentBuffer = StringBuffer();
         final reasoningBuffer = StringBuffer();
         await for (final chunk
-            in _llmService.generateStreamWithReasoning(context, config)) {
+            in _llmService.generateStreamWithReasoning(
+                context, _withAdvancedSampling(config))) {
           if (chunk.isReasoningChunk && chunk.reasoning != null) {
             reasoningBuffer.write(chunk.reasoning);
           }
@@ -446,9 +527,11 @@ class ActiveChatNotifier extends StateNotifier<ActiveChatState> {
       } else {
         // Non-streaming: get complete response at once with reasoning support
         final response =
-            await _llmService.generateWithReasoning(context, config);
+            await _llmService.generateWithReasoning(
+            context, _withAdvancedSampling(config));
         finalContent = response.content;
         finalReasoning = response.reasoning;
+        _storeLogprobs(assistantMessage.id, response);
 
         // Update the message with final content
         final updatedMessage = assistantMessage.copyWith(
@@ -499,7 +582,8 @@ class ActiveChatNotifier extends StateNotifier<ActiveChatState> {
         final contentBuffer = StringBuffer();
         final reasoningBuffer = StringBuffer();
         await for (final chunk
-            in _llmService.generateStreamWithReasoning(context, config)) {
+            in _llmService.generateStreamWithReasoning(
+                context, _withAdvancedSampling(config))) {
           // Check if generation was cancelled
           if (_isCancelling) {
             break;
@@ -550,9 +634,11 @@ class ActiveChatNotifier extends StateNotifier<ActiveChatState> {
       } else {
         // Non-streaming mode with reasoning support
         final response =
-            await _llmService.generateWithReasoning(context, config);
+            await _llmService.generateWithReasoning(
+            context, _withAdvancedSampling(config));
         finalContent = response.content;
         finalReasoning = response.reasoning;
+        _storeLogprobs(lastMessage.id, response);
       }
 
       // Save the updated message
@@ -709,7 +795,8 @@ class ActiveChatNotifier extends StateNotifier<ActiveChatState> {
         final contentBuffer = StringBuffer();
         final reasoningBuffer = StringBuffer();
         await for (final chunk
-            in _llmService.generateStreamWithReasoning(context, config)) {
+            in _llmService.generateStreamWithReasoning(
+                context, _withAdvancedSampling(config))) {
           // Check if generation was cancelled
           if (_isCancelling) {
             break;
@@ -765,9 +852,11 @@ class ActiveChatNotifier extends StateNotifier<ActiveChatState> {
       } else {
         // Non-streaming mode with reasoning support
         final response =
-            await _llmService.generateWithReasoning(context, config);
+            await _llmService.generateWithReasoning(
+            context, _withAdvancedSampling(config));
         finalContent = response.content;
         finalReasoning = response.reasoning;
+        _storeLogprobs(message.id, response);
       }
 
       // Save the updated message
@@ -897,7 +986,8 @@ class ActiveChatNotifier extends StateNotifier<ActiveChatState> {
         final contentBuffer = StringBuffer();
         final reasoningBuffer = StringBuffer();
         await for (final chunk
-            in _llmService.generateStreamWithReasoning(context, config)) {
+            in _llmService.generateStreamWithReasoning(
+                context, _withAdvancedSampling(config))) {
           // Check if generation was cancelled
           if (_isCancelling) {
             break;
@@ -929,9 +1019,11 @@ class ActiveChatNotifier extends StateNotifier<ActiveChatState> {
       } else {
         // Non-streaming: get complete response at once with reasoning support
         final response =
-            await _llmService.generateWithReasoning(context, config);
+            await _llmService.generateWithReasoning(
+            context, _withAdvancedSampling(config));
         finalContent = response.content;
         finalReasoning = response.reasoning;
+        _storeLogprobs(assistantMessage.id, response);
 
         // Update the message with final content
         final updatedMessage = assistantMessage.copyWith(
@@ -965,6 +1057,54 @@ class ActiveChatNotifier extends StateNotifier<ActiveChatState> {
 
   /// Build context for LLM
   /// This method builds the full message list according to Prompt Manager configuration
+  /// Retrieve relevant documents from the active vector collection using
+  /// the latest user message as the query. Returns the formatted context
+  /// block, or null when RAG is disabled, unconfigured, or nothing matches.
+  Future<String?> _retrieveRagContext(List<ChatMessage> chatMessages) async {
+    final settings = _ref.read(vectorStorageSettingsProvider);
+    if (!settings.enabled || !settings.includeInPrompt) return null;
+    final collectionId = settings.activeCollectionId;
+    if (collectionId == null) return null;
+
+    final service = _ref.read(vectorStorageServiceProvider);
+    final collection = service.getCollection(collectionId);
+    if (collection == null ||
+        collection.documents.every((d) => d.embedding == null)) {
+      return null;
+    }
+
+    var query = '';
+    for (final m in chatMessages.reversed) {
+      if (m.role == MessageRole.user && m.content.isNotEmpty) {
+        query = m.content;
+        break;
+      }
+    }
+    if (query.isEmpty) return null;
+
+    try {
+      final embeddings = await _ref
+          .read(embeddingServiceProvider)
+          .embed([query], settings);
+      if (embeddings.isEmpty) return null;
+
+      final results = service.search(
+        collectionId: collectionId,
+        queryEmbedding: embeddings.first,
+        topK: settings.topK,
+        similarityThreshold: settings.similarityThreshold,
+      );
+      if (results.isEmpty) return null;
+
+      return service.formatContextWithTemplate(
+          results, settings.promptTemplate);
+    } catch (e) {
+      // RAG failures must never block generation
+      debugPrint('RAG retrieval failed: $e');
+      return null;
+    }
+  }
+
   Future<List<Map<String, dynamic>>> _buildContext(
       {bool excludeLastAssistant = false}) async {
     final messages = <Map<String, dynamic>>[];
@@ -1093,6 +1233,12 @@ class ActiveChatNotifier extends StateNotifier<ActiveChatState> {
         addWorldInfoAt,
       );
       messages.addAll(sectionMessages);
+    }
+
+    // Retrieved context from the vector storage / data bank (RAG)
+    final ragContext = await _retrieveRagContext(chatMessages);
+    if (ragContext != null) {
+      messages.add({'role': 'system', 'content': ragContext});
     }
 
     // Add summary message if we have summaries
@@ -1609,6 +1755,12 @@ class ActiveChatNotifier extends StateNotifier<ActiveChatState> {
         addWorldInfoAt,
       );
       messages.addAll(sectionMessages);
+    }
+
+    // Retrieved context from the vector storage / data bank (RAG)
+    final ragContext = await _retrieveRagContext(chatMessages);
+    if (ragContext != null) {
+      messages.add({'role': 'system', 'content': ragContext});
     }
 
     // Add summary message if we have summaries
@@ -2390,7 +2542,8 @@ class ActiveChatNotifier extends StateNotifier<ActiveChatState> {
         final contentBuffer = StringBuffer();
         final reasoningBuffer = StringBuffer();
         await for (final chunk
-            in _llmService.generateStreamWithReasoning(context, config)) {
+            in _llmService.generateStreamWithReasoning(
+                context, _withAdvancedSampling(config))) {
           // Check if generation was cancelled
           if (_isCancelling) {
             break;
@@ -2422,9 +2575,11 @@ class ActiveChatNotifier extends StateNotifier<ActiveChatState> {
       } else {
         // Non-streaming: get complete response at once with reasoning support
         final response =
-            await _llmService.generateWithReasoning(context, config);
+            await _llmService.generateWithReasoning(
+            context, _withAdvancedSampling(config));
         finalContent = response.content;
         finalReasoning = response.reasoning;
+        _storeLogprobs(assistantMessage.id, response);
 
         // Update the message with final content
         final updatedMessage = assistantMessage.copyWith(
@@ -2469,6 +2624,13 @@ class ActiveChatNotifier extends StateNotifier<ActiveChatState> {
     // Build system prompt for group chat
     final systemPrompt = await _buildGroupSystemPrompt(respondingCharacter);
     messages.add({'role': 'system', 'content': systemPrompt});
+
+    // Retrieved context from the vector storage / data bank (RAG)
+    final ragContext = await _retrieveRagContext(
+        state.messages.where((m) => !m.isHidden).toList());
+    if (ragContext != null) {
+      messages.add({'role': 'system', 'content': ragContext});
+    }
 
     // Add chat messages (hidden messages are excluded from context)
     for (final msg in state.messages) {

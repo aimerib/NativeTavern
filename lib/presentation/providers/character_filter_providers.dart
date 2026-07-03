@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/models/character.dart';
 import '../../data/repositories/character_repository.dart';
@@ -12,6 +14,7 @@ enum CharacterSortOption {
   createdAtAsc,
   modifiedAtDesc,
   modifiedAtAsc,
+  random,
 }
 
 /// Filter state for character list
@@ -22,12 +25,18 @@ class CharacterFilterState {
   final bool showFavoritesOnly;
   final CharacterSortOption sortOption;
 
+  /// Seed for the random sort order; regenerated each time the user
+  /// selects Random so re-selecting it reshuffles, while filter changes
+  /// keep the current order stable.
+  final int randomSeed;
+
   const CharacterFilterState({
     this.searchQuery = '',
     this.selectedTagIds = const {},
     this.selectedLegacyTags = const [],
     this.showFavoritesOnly = false,
     this.sortOption = CharacterSortOption.modifiedAtDesc,
+    this.randomSeed = 0,
   });
 
   CharacterFilterState copyWith({
@@ -36,6 +45,7 @@ class CharacterFilterState {
     List<String>? selectedLegacyTags,
     bool? showFavoritesOnly,
     CharacterSortOption? sortOption,
+    int? randomSeed,
   }) {
     return CharacterFilterState(
       searchQuery: searchQuery ?? this.searchQuery,
@@ -43,6 +53,7 @@ class CharacterFilterState {
       selectedLegacyTags: selectedLegacyTags ?? this.selectedLegacyTags,
       showFavoritesOnly: showFavoritesOnly ?? this.showFavoritesOnly,
       sortOption: sortOption ?? this.sortOption,
+      randomSeed: randomSeed ?? this.randomSeed,
     );
   }
 
@@ -104,7 +115,12 @@ class CharacterFilterNotifier extends StateNotifier<CharacterFilterState> {
   }
 
   void setSortOption(CharacterSortOption option) {
-    state = state.copyWith(sortOption: option);
+    state = state.copyWith(
+      sortOption: option,
+      randomSeed: option == CharacterSortOption.random
+          ? Random().nextInt(1 << 31)
+          : state.randomSeed,
+    );
   }
 
   void clearFilters() {
@@ -166,18 +182,42 @@ final filteredCharactersProvider = FutureProvider<List<Character>>((ref) async {
     }).toList();
   }
   
-  // Apply new tag filter (from Tags table)
-  if (filterState.selectedTagIds.isNotEmpty) {
-    final tagIds = filterState.selectedTagIds.toList();
-    final characterIdsWithTags = await tagRepo.getCharactersWithAllTags(tagIds);
-    final characterIdSet = characterIdsWithTags.toSet();
-    characters = characters.where((c) => characterIdSet.contains(c.id)).toList();
-  }
-  
-  // Apply legacy tag filter (from character.tags field)
-  if (filterState.selectedLegacyTags.isNotEmpty) {
+  // Apply tag filters. Managed tags and legacy card tags are unified by
+  // name (case-insensitive): a tag matches a character when it is assigned
+  // via the Tags table OR the character's card carries a tag with the same
+  // name. A character must match every selected tag.
+  if (filterState.selectedTagIds.isNotEmpty ||
+      filterState.selectedLegacyTags.isNotEmpty) {
+    final allTags = await ref.watch(allTagsProvider.future);
+    final tagsById = {for (final t in allTags) t.id: t};
+    final tagsByName = {for (final t in allTags) t.name.toLowerCase(): t};
+
+    final requiredNames = <String>[];
+    final requiredJunctions = <Set<String>>[];
+
+    Future<void> addRequirement(String nameLower, String? tagId) async {
+      requiredNames.add(nameLower);
+      requiredJunctions.add(tagId != null
+          ? (await tagRepo.getCharacterIdsForTag(tagId)).toSet()
+          : const <String>{});
+    }
+
+    for (final tagId in filterState.selectedTagIds) {
+      await addRequirement(tagsById[tagId]?.name.toLowerCase() ?? '', tagId);
+    }
+    for (final tag in filterState.selectedLegacyTags) {
+      await addRequirement(tag.toLowerCase(), tagsByName[tag.toLowerCase()]?.id);
+    }
+
     characters = characters.where((c) {
-      return filterState.selectedLegacyTags.every((tag) => c.tags.contains(tag));
+      final cardTags = c.tags.map((t) => t.toLowerCase()).toSet();
+      for (var i = 0; i < requiredNames.length; i++) {
+        final matches = requiredJunctions[i].contains(c.id) ||
+            (requiredNames[i].isNotEmpty &&
+                cardTags.contains(requiredNames[i]));
+        if (!matches) return false;
+      }
+      return true;
     }).toList();
   }
   
@@ -205,6 +245,9 @@ final filteredCharactersProvider = FutureProvider<List<Character>>((ref) async {
       break;
     case CharacterSortOption.modifiedAtAsc:
       characters.sort((a, b) => a.modifiedAt.compareTo(b.modifiedAt));
+      break;
+    case CharacterSortOption.random:
+      characters.shuffle(Random(filterState.randomSeed));
       break;
   }
   
@@ -249,6 +292,8 @@ extension CharacterSortOptionExtension on CharacterSortOption {
         return 'Recently Modified';
       case CharacterSortOption.modifiedAtAsc:
         return 'Least Recently Modified';
+      case CharacterSortOption.random:
+        return 'Random';
     }
   }
 
@@ -264,6 +309,8 @@ extension CharacterSortOptionExtension on CharacterSortOption {
       case CharacterSortOption.createdAtAsc:
       case CharacterSortOption.modifiedAtAsc:
         return '↑';
+      case CharacterSortOption.random:
+        return '⇄';
     }
   }
 }

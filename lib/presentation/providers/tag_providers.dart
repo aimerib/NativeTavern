@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:native_tavern/data/models/tag.dart' as models;
+import 'package:native_tavern/data/repositories/character_repository.dart';
 import 'package:native_tavern/data/repositories/tag_repository.dart';
 import 'package:native_tavern/core/services/initialization_service.dart';
 
@@ -15,10 +16,27 @@ final allTagsProvider = FutureProvider<List<models.Tag>>((ref) async {
   return repository.getAllTags();
 });
 
-/// Provider for tag usage counts
+/// Provider for tag usage counts. A character counts toward a tag when it
+/// is assigned via the Tags table OR its card carries a legacy tag with the
+/// same name (case-insensitive) — same-name tags are treated as one tag.
 final tagUsageCountsProvider = FutureProvider<Map<String, int>>((ref) async {
   final repository = ref.watch(tagRepositoryProvider);
-  return repository.getTagUsageCounts();
+  final characters =
+      await ref.watch(characterRepositoryProvider).getAllCharacters();
+  final tags = await repository.getAllTags();
+
+  final counts = <String, int>{};
+  for (final tag in tags) {
+    final ids = (await repository.getCharacterIdsForTag(tag.id)).toSet();
+    final nameLower = tag.name.toLowerCase();
+    for (final character in characters) {
+      if (character.tags.any((t) => t.toLowerCase() == nameLower)) {
+        ids.add(character.id);
+      }
+    }
+    counts[tag.id] = ids.length;
+  }
+  return counts;
 });
 
 /// Provider for tags of a specific character

@@ -5,6 +5,7 @@ import 'package:native_tavern/data/models/chat.dart';
 import 'package:native_tavern/data/models/character.dart';
 import 'package:native_tavern/l10n/generated/app_localizations.dart';
 import 'package:native_tavern/presentation/theme/app_theme.dart';
+import 'package:native_tavern/presentation/providers/translation_providers.dart';
 import 'package:native_tavern/presentation/widgets/chat/message_content_widget.dart';
 import 'package:native_tavern/presentation/widgets/chat/reasoning_widget.dart';
 import 'package:native_tavern/presentation/widgets/common/character_avatar_image.dart';
@@ -195,6 +196,9 @@ class _VisualNovelMessageViewState extends ConsumerState<VisualNovelMessageView>
     final isUser = message.role == MessageRole.user;
     final hasSwipes = message.swipes.length > 1;
     final isLast = widget.messages.isNotEmpty && message == widget.messages.last;
+    final translation = ref.watch(messageTranslationsProvider)[message.id];
+    final showOriginal =
+        ref.watch(translationSettingsProvider.select((s) => s.showOriginal));
 
     return GestureDetector(
       onLongPress: () => widget.onLongPress(message),
@@ -214,13 +218,31 @@ class _VisualNovelMessageViewState extends ConsumerState<VisualNovelMessageView>
               _buildTypingIndicator()
             else
               MessageContentWidget(
-                content: message.content,
+                content: translation != null && !showOriginal
+                    ? translation.translatedText
+                    : message.content,
                 textColor: Colors.white,
                 selectable: false,
                 onLongPress: () => widget.onLongPress(message),
                 isStreaming: isGenerating,
                 messageId: message.id,
               ),
+            // Translation shown below the original text
+            if (translation != null && showOriginal) ...[
+              const SizedBox(height: 8),
+              Container(
+                height: 1,
+                color: Colors.white.withValues(alpha: 0.3),
+              ),
+              const SizedBox(height: 8),
+              MessageContentWidget(
+                content: translation.translatedText,
+                textColor: Colors.white,
+                selectable: false,
+                onLongPress: () => widget.onLongPress(message),
+                messageId: '${message.id}-translation',
+              ),
+            ],
             // Swipe controls
             if (hasSwipes && !isGenerating)
               _buildSwipeControls(message),

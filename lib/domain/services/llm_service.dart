@@ -22,12 +22,17 @@ enum LLMProvider {
 class LLMResponse {
   final String content;
   final String? reasoning;
-  
+
+  /// Raw provider response body (non-streaming only); used e.g. to extract
+  /// token logprobs
+  final Map<String, dynamic>? rawResponse;
+
   const LLMResponse({
     required this.content,
     this.reasoning,
+    this.rawResponse,
   });
-  
+
   bool get hasReasoning => reasoning != null && reasoning!.isNotEmpty;
 }
 
@@ -76,6 +81,15 @@ class LLMConfig {
   final bool autoSummarizeEnabled;
   final double autoSummarizeThreshold;
 
+  // Advanced sampling merged in at request time from the logit bias /
+  // CFG scale / logprobs settings; intentionally not persisted with the
+  // config (the dedicated settings are the source of truth)
+  final Map<String, double> logitBias;
+  final double guidanceScale;
+  final String negativePrompt;
+  final bool requestLogprobs;
+  final int topLogprobs;
+
   const LLMConfig({
     required this.provider,
     required this.model,
@@ -104,6 +118,12 @@ class LLMConfig {
     // Auto-summarization defaults
     this.autoSummarizeEnabled = true,
     this.autoSummarizeThreshold = 0.8,
+    // Advanced sampling defaults (all disabled)
+    this.logitBias = const {},
+    this.guidanceScale = 1.0,
+    this.negativePrompt = '',
+    this.requestLogprobs = false,
+    this.topLogprobs = 5,
   });
 
   LLMConfig copyWith({
@@ -132,6 +152,11 @@ class LLMConfig {
     int? seed,
     bool? autoSummarizeEnabled,
     double? autoSummarizeThreshold,
+    Map<String, double>? logitBias,
+    double? guidanceScale,
+    String? negativePrompt,
+    bool? requestLogprobs,
+    int? topLogprobs,
   }) {
     return LLMConfig(
       provider: provider ?? this.provider,
@@ -159,6 +184,11 @@ class LLMConfig {
       seed: seed ?? this.seed,
       autoSummarizeEnabled: autoSummarizeEnabled ?? this.autoSummarizeEnabled,
       autoSummarizeThreshold: autoSummarizeThreshold ?? this.autoSummarizeThreshold,
+      logitBias: logitBias ?? this.logitBias,
+      guidanceScale: guidanceScale ?? this.guidanceScale,
+      negativePrompt: negativePrompt ?? this.negativePrompt,
+      requestLogprobs: requestLogprobs ?? this.requestLogprobs,
+      topLogprobs: topLogprobs ?? this.topLogprobs,
     );
   }
 
@@ -896,10 +926,24 @@ class LLMService {
       if (config.topA > 0.0) requestData['top_a'] = config.topA;
       if (config.typicalP != 1.0) requestData['typical_p'] = config.typicalP;
       if (config.tailFreeSampling != 1.0) requestData['tfs_z'] = config.tailFreeSampling;
+      // CFG (textgen-webui / TabbyAPI style)
+      if (config.guidanceScale != 1.0) {
+        requestData['guidance_scale'] = config.guidanceScale;
+        if (config.negativePrompt.isNotEmpty) {
+          requestData['negative_prompt'] = config.negativePrompt;
+        }
+      }
     }
-    
+    if (config.logitBias.isNotEmpty) {
+      requestData['logit_bias'] = config.logitBias;
+    }
+    if (config.requestLogprobs) {
+      requestData['logprobs'] = true;
+      requestData['top_logprobs'] = config.topLogprobs;
+    }
+
     _logRequest(endpoint, requestData, config);
-    
+
     final response = await _dio.post(
       endpoint,
       options: Options(
@@ -938,7 +982,7 @@ class LLMService {
       statusCode: response.statusCode,
       contentPreview: content.length > 100 ? '${content.substring(0, 100)}...' : content);
     
-    return LLMResponse(content: content, reasoning: reasoning);
+    return LLMResponse(content: content, reasoning: reasoning, rawResponse: data);
   }
 
   Stream<String> _streamOpenAI(
@@ -1516,8 +1560,18 @@ class LLMService {
         if (config.topA > 0.0) requestData['top_a'] = config.topA;
         if (config.typicalP != 1.0) requestData['typical_p'] = config.typicalP;
         if (config.tailFreeSampling != 1.0) requestData['tfs_z'] = config.tailFreeSampling;
+        // CFG (textgen-webui / TabbyAPI style)
+        if (config.guidanceScale != 1.0) {
+          requestData['guidance_scale'] = config.guidanceScale;
+          if (config.negativePrompt.isNotEmpty) {
+            requestData['negative_prompt'] = config.negativePrompt;
+          }
+        }
       }
-      
+      if (config.logitBias.isNotEmpty) {
+        requestData['logit_bias'] = config.logitBias;
+      }
+
       _logRequest(endpoint, requestData, config);
       
       final response = await _dio.post<ResponseBody>(
