@@ -170,6 +170,8 @@ class ChatMessage {
   final String? reasoning; // Chain of Thought / Thinking content from LLM
   final List<String>? reasoningSwipes; // Reasoning content for each swipe
   final List<ChatAttachment> attachments; // Image attachments
+  final bool isEdited; // Content was manually edited by the user
+  final bool isHidden; // Excluded from LLM context but still shown in UI
 
   const ChatMessage({
     required this.id,
@@ -184,6 +186,8 @@ class ChatMessage {
     this.reasoning,
     this.reasoningSwipes,
     this.attachments = const [],
+    this.isEdited = false,
+    this.isHidden = false,
   });
 
   /// Get the current reasoning content (for current swipe)
@@ -217,6 +221,8 @@ class ChatMessage {
     String? reasoning,
     List<String>? reasoningSwipes,
     List<ChatAttachment>? attachments,
+    bool? isEdited,
+    bool? isHidden,
     bool clearCharacterId = false,
     bool clearCharacterName = false,
     bool clearReasoning = false,
@@ -234,6 +240,8 @@ class ChatMessage {
       reasoning: clearReasoning ? null : (reasoning ?? this.reasoning),
       reasoningSwipes: clearReasoning ? null : (reasoningSwipes ?? this.reasoningSwipes),
       attachments: attachments ?? this.attachments,
+      isEdited: isEdited ?? this.isEdited,
+      isHidden: isHidden ?? this.isHidden,
     );
   }
 
@@ -250,6 +258,8 @@ class ChatMessage {
         if (reasoning != null) 'reasoning': reasoning,
         if (reasoningSwipes != null) 'reasoningSwipes': reasoningSwipes,
         if (attachments.isNotEmpty) 'attachments': attachments.map((a) => a.toJson()).toList(),
+        if (isEdited) 'isEdited': isEdited,
+        if (isHidden) 'isHidden': isHidden,
       };
 
   factory ChatMessage.fromJson(Map<String, dynamic> json) => ChatMessage(
@@ -270,5 +280,7 @@ class ChatMessage {
         attachments: (json['attachments'] as List<dynamic>?)
             ?.map((a) => ChatAttachment.fromJson(a as Map<String, dynamic>))
             .toList() ?? [],
+        isEdited: json['isEdited'] as bool? ?? false,
+        isHidden: json['isHidden'] as bool? ?? false,
       );
 }

@@ -11,6 +11,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 import 'package:uuid/uuid.dart';
 import 'package:native_tavern/l10n/generated/app_localizations.dart';
+import 'package:native_tavern/presentation/widgets/common/confirm_delete_dialog.dart';
 
 /// Screen for managing user personas
 class PersonasScreen extends ConsumerWidget {
@@ -134,28 +135,17 @@ class PersonasScreen extends ConsumerWidget {
     );
   }
 
-  void _showDeleteConfirmation(BuildContext context, WidgetRef ref, Persona persona) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(AppLocalizations.of(context)!.deletePersona),
-        content: Text(AppLocalizations.of(context)!.deletePersonaConfirmation(persona.name)),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(AppLocalizations.of(context)!.cancel),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              ref.read(personaNotifierProvider.notifier).deletePersona(persona.id);
-            },
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: Text(AppLocalizations.of(context)!.delete),
-          ),
-        ],
-      ),
+  Future<void> _showDeleteConfirmation(BuildContext context, WidgetRef ref, Persona persona) async {
+    final l10n = AppLocalizations.of(context)!;
+    final confirmed = await confirmDelete(
+      context,
+      ref,
+      title: l10n.deletePersona,
+      message: l10n.deletePersonaConfirmation(persona.name),
     );
+    if (confirmed) {
+      ref.read(personaNotifierProvider.notifier).deletePersona(persona.id);
+    }
   }
 
   void _setActivePersona(WidgetRef ref, String id) {

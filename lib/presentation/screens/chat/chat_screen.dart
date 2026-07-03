@@ -37,6 +37,7 @@ import 'package:native_tavern/presentation/widgets/common/character_avatar_image
 import 'package:native_tavern/domain/services/image_generation_service.dart';
 import 'package:native_tavern/presentation/screens/chat/chat_layout_mode.dart';
 import 'package:native_tavern/presentation/widgets/chat/visual_novel_message_view.dart';
+import 'package:native_tavern/presentation/widgets/common/confirm_delete_dialog.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 import 'package:uuid/uuid.dart';
@@ -1038,6 +1039,20 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                 _showEditMessageDialog(message);
               },
             ),
+            ListTile(
+              leading: Icon(
+                message.isHidden ? Icons.visibility : Icons.visibility_off,
+              ),
+              title: Text(
+                  message.isHidden ? l10n.showInContext : l10n.hideFromContext),
+              subtitle: Text(l10n.hideFromContextDescription),
+              onTap: () {
+                Navigator.pop(context);
+                ref
+                    .read(activeChatProvider.notifier)
+                    .toggleMessageHidden(message.id);
+              },
+            ),
             if (message.role != MessageRole.system)
               ListTile(
                 leading: const Icon(Icons.refresh),
@@ -1144,6 +1159,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                   _showImageGenerationDialog(message, chatState.character);
                 }
               : null,
+          onToggleHidden: () {
+            ref.read(activeChatProvider.notifier).toggleMessageHidden(message.id);
+          },
         );
       },
     );
@@ -1235,56 +1253,31 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     }
   }
 
-  void _showDeleteConfirmation(String messageId) {
+  Future<void> _showDeleteConfirmation(String messageId) async {
     final l10n = AppLocalizations.of(context);
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(l10n.deleteMessage),
-        content: Text(l10n.deleteMessageConfirmation),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(l10n.cancel),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              ref.read(activeChatProvider.notifier).deleteMessage(messageId);
-            },
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: Text(l10n.delete),
-          ),
-        ],
-      ),
+    final confirmed = await confirmDelete(
+      context,
+      ref,
+      title: l10n.deleteMessage,
+      message: l10n.deleteMessageConfirmation,
     );
+    if (confirmed) {
+      ref.read(activeChatProvider.notifier).deleteMessage(messageId);
+    }
   }
 
-  void _showDeleteAndAfterConfirmation(String messageId) {
+  Future<void> _showDeleteAndAfterConfirmation(String messageId) async {
     final l10n = AppLocalizations.of(context);
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(l10n.deleteMessages),
-        content: Text(l10n.deleteMessagesConfirmation),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(l10n.cancel),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              ref
-                  .read(activeChatProvider.notifier)
-                  .deleteMessageAndAfter(messageId);
-            },
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: Text(l10n.deleteAll),
-          ),
-        ],
-      ),
+    final confirmed = await confirmDelete(
+      context,
+      ref,
+      title: l10n.deleteMessages,
+      message: l10n.deleteMessagesConfirmation,
+      confirmLabel: l10n.deleteAll,
     );
+    if (confirmed) {
+      ref.read(activeChatProvider.notifier).deleteMessageAndAfter(messageId);
+    }
   }
 
   Widget _buildQuickReplyBar(ActiveChatState chatState) {
@@ -2161,6 +2154,7 @@ class _MessageBubble extends StatefulWidget {
   final VoidCallback onDeleteAndAfter;
   final VoidCallback onCreateBookmark;
   final VoidCallback? onGenerateImage;
+  final VoidCallback onToggleHidden;
 
   const _MessageBubble({
     super.key,
@@ -2181,6 +2175,7 @@ class _MessageBubble extends StatefulWidget {
     required this.onDeleteAndAfter,
     required this.onCreateBookmark,
     this.onGenerateImage,
+    required this.onToggleHidden,
   });
 
   @override
@@ -2226,7 +2221,10 @@ class _MessageBubbleState extends State<_MessageBubble> {
               children: [
                 GestureDetector(
                   onLongPress: () => _showMessageOptions(context),
-                  child: Container(
+                  child: Opacity(
+                    // Dim messages that are hidden from the LLM context
+                    opacity: widget.message.isHidden ? 0.5 : 1.0,
+                    child: Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 16,
                       vertical: 12,
@@ -2263,8 +2261,49 @@ class _MessageBubbleState extends State<_MessageBubble> {
                                 ),
                             ],
                           ),
+                    ),
                   ),
                 ),
+
+                // Edited / hidden indicators
+                if (widget.message.isEdited || widget.message.isHidden)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 2),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (widget.message.isHidden) ...[
+                          const Icon(Icons.visibility_off,
+                              size: 12, color: AppTheme.textMuted),
+                          const SizedBox(width: 2),
+                          Text(
+                            AppLocalizations.of(context).hiddenFromContext,
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodySmall
+                                ?.copyWith(
+                                  color: AppTheme.textMuted,
+                                  fontStyle: FontStyle.italic,
+                                ),
+                          ),
+                        ],
+                        if (widget.message.isEdited &&
+                            widget.message.isHidden)
+                          const SizedBox(width: 8),
+                        if (widget.message.isEdited)
+                          Text(
+                            AppLocalizations.of(context).editedLabel,
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodySmall
+                                ?.copyWith(
+                                  color: AppTheme.textMuted,
+                                  fontStyle: FontStyle.italic,
+                                ),
+                          ),
+                      ],
+                    ),
+                  ),
 
                 // Swipe controls
                 if (hasSwipes && !widget.isGenerating)
@@ -2628,6 +2667,24 @@ class _MessageBubbleState extends State<_MessageBubble> {
               onTap: () {
                 Navigator.pop(context);
                 widget.onCreateBookmark();
+              },
+            ),
+
+            // Hide from / show in LLM context
+            ListTile(
+              leading: Icon(
+                widget.message.isHidden
+                    ? Icons.visibility
+                    : Icons.visibility_off,
+                color: AppTheme.textSecondary,
+              ),
+              title: Text(widget.message.isHidden
+                  ? l10n.showInContext
+                  : l10n.hideFromContext),
+              subtitle: Text(l10n.hideFromContextDescription),
+              onTap: () {
+                Navigator.pop(context);
+                widget.onToggleHidden();
               },
             ),
 

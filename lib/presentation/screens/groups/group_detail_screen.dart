@@ -7,6 +7,7 @@ import 'package:native_tavern/presentation/providers/group_providers.dart';
 import 'package:native_tavern/presentation/providers/character_providers.dart';
 import 'package:native_tavern/data/repositories/character_repository.dart';
 import 'package:native_tavern/l10n/generated/app_localizations.dart';
+import 'package:native_tavern/presentation/widgets/common/confirm_delete_dialog.dart';
 
 class GroupDetailScreen extends ConsumerStatefulWidget {
   final String groupId;
@@ -83,26 +84,15 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
   }
 
   Future<void> _deleteGroup() async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(AppLocalizations.of(context)!.deleteGroup),
-        content: Text(AppLocalizations.of(context)!.deleteGroupAndChats(_group?.name ?? '')),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text(AppLocalizations.of(context)!.cancel),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: Text(AppLocalizations.of(context)!.delete),
-          ),
-        ],
-      ),
+    final l10n = AppLocalizations.of(context)!;
+    final confirmed = await confirmDelete(
+      context,
+      ref,
+      title: l10n.deleteGroup,
+      message: l10n.deleteGroupAndChats(_group?.name ?? ''),
     );
 
-    if (confirmed == true && _group != null) {
+    if (confirmed && _group != null) {
       await ref.read(groupListProvider.notifier).deleteGroup(_group!.id);
       if (mounted) {
         context.go('/groups');

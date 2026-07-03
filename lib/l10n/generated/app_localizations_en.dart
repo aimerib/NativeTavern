@@ -244,6 +244,29 @@ class AppLocalizationsEn extends AppLocalizations {
   String get deleteThisAndAllAfter => 'Delete this and all after';
 
   @override
+  String get confirmBeforeDelete => 'Confirm before deleting';
+
+  @override
+  String get confirmBeforeDeleteDescription =>
+      'Ask for confirmation when deleting characters, chats, and messages';
+
+  @override
+  String get editedLabel => 'edited';
+
+  @override
+  String get hideFromContext => 'Hide from context';
+
+  @override
+  String get showInContext => 'Show in context';
+
+  @override
+  String get hideFromContextDescription =>
+      'Hidden messages stay visible but are not sent to the AI';
+
+  @override
+  String get hiddenFromContext => 'hidden from context';
+
+  @override
   String get attachImage => 'Attach image';
 
   @override
@@ -954,12 +977,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String failedToDuplicate(String error) {
     return 'Failed to duplicate: $error';
   }
-
-  @override
-  String get pngExportComingSoon => 'PNG export coming soon';
-
-  @override
-  String get charxExportComingSoon => 'CharX export coming soon';
 
   @override
   String get failedToCreateChat => 'Failed to create chat';

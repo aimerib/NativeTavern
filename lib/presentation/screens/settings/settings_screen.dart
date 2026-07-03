@@ -160,7 +160,6 @@ class SettingsScreen extends ConsumerWidget {
             onTap: () => context.push(AppRoutes.themeSettings),
           ),
           const _ConfirmDeleteTile(),
-          const _AutoSaveTile(),
           const _DebugLogTile(),
           
           ListTile(
@@ -254,29 +253,11 @@ class _ConfirmDeleteTile extends ConsumerWidget {
 
     return SwitchListTile(
       secondary: const Icon(Icons.delete_forever),
-      title: Text(l10n.delete),
+      title: Text(l10n.confirmBeforeDelete),
+      subtitle: Text(l10n.confirmBeforeDeleteDescription),
       value: settings.confirmBeforeDelete,
       onChanged: (value) {
         ref.read(appSettingsProvider.notifier).updateConfirmBeforeDelete(value);
-      },
-    );
-  }
-}
-
-class _AutoSaveTile extends ConsumerWidget {
-  const _AutoSaveTile();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = AppLocalizations.of(context);
-    final settings = ref.watch(appSettingsProvider);
-
-    return SwitchListTile(
-      secondary: const Icon(Icons.save),
-      title: Text(l10n.save),
-      value: settings.autoSaveChats,
-      onChanged: (value) {
-        ref.read(appSettingsProvider.notifier).updateAutoSaveChats(value);
       },
     );
   }

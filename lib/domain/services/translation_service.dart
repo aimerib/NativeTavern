@@ -1,4 +1,6 @@
-import 'package:flutter/foundation.dart';
+import 'dart:convert';
+
+import 'package:dio/dio.dart';
 
 /// Translation Provider types
 enum TranslationProvider {
@@ -173,6 +175,14 @@ class TranslationResult {
 /// Translation Service
 class TranslationService {
   TranslationSettings _settings = const TranslationSettings();
+  final Dio _dio;
+
+  TranslationService({Dio? dio})
+      : _dio = dio ??
+            Dio(BaseOptions(
+              connectTimeout: const Duration(seconds: 15),
+              receiveTimeout: const Duration(seconds: 30),
+            ));
 
   /// Callbacks
   void Function(String)? onError;
@@ -207,49 +217,129 @@ class TranslationService {
     }
 
     try {
-      // Here we would call the actual translation API
-      // For now, simulate with debug output
-      debugPrint('Translation: "$text" from $source to $target');
-
-      // Simulate API call delay
-      await Future.delayed(const Duration(milliseconds: 500));
-
-      // For demo purposes, return the original text with a note
-      // In production, this would call the actual API
-      final translatedText = _simulateTranslation(text, source, target);
-
-      return TranslationResult(
-        originalText: text,
-        translatedText: translatedText,
-        sourceLanguage: source,
-        targetLanguage: target,
-        confidence: 0.95,
-      );
+      switch (_settings.provider) {
+        case TranslationProvider.google:
+          return await _translateWithGoogle(text, source, target);
+        case TranslationProvider.deepl:
+          return await _translateWithDeepL(text, source, target);
+        case TranslationProvider.libre:
+          return await _translateWithLibre(text, source, target);
+      }
     } catch (e) {
       onError?.call('Translation error: $e');
       return null;
     }
   }
 
-  /// Simulate translation (placeholder for actual API)
-  String _simulateTranslation(String text, String source, String target) {
-    // In production, this would call Google Translate, DeepL, etc.
-    // For now, just return the original text
-    return text;
+  /// Google Translate via the free web endpoint (no API key required)
+  Future<TranslationResult> _translateWithGoogle(
+      String text, String source, String target) async {
+    final response = await _dio.get<dynamic>(
+      'https://translate.googleapis.com/translate_a/single',
+      queryParameters: {
+        'client': 'gtx',
+        'sl': source,
+        'tl': target,
+        'dt': 't',
+        'q': text,
+      },
+    );
+
+    // Response shape: [[["translated","original",...], ...], null, "detectedLang", ...]
+    final data = response.data is String
+        ? jsonDecode(response.data as String)
+        : response.data;
+    final segments = data[0] as List<dynamic>;
+    final translated =
+        segments.map((s) => (s as List<dynamic>)[0] as String? ?? '').join();
+    final detectedSource =
+        data.length > 2 && data[2] is String ? data[2] as String : source;
+
+    return TranslationResult(
+      originalText: text,
+      translatedText: translated,
+      sourceLanguage: detectedSource,
+      targetLanguage: target,
+    );
   }
 
-  /// Detect language of text
+  /// DeepL API (requires API key; free keys end in ":fx")
+  Future<TranslationResult> _translateWithDeepL(
+      String text, String source, String target) async {
+    final apiKey = _settings.apiKey;
+    if (apiKey == null || apiKey.isEmpty) {
+      throw Exception('DeepL requires an API key');
+    }
+
+    final endpoint = _settings.apiEndpoint?.isNotEmpty == true
+        ? _settings.apiEndpoint!
+        : (apiKey.endsWith(':fx')
+            ? 'https://api-free.deepl.com'
+            : 'https://api.deepl.com');
+
+    final response = await _dio.post<Map<String, dynamic>>(
+      '$endpoint/v2/translate',
+      options: Options(headers: {
+        'Authorization': 'DeepL-Auth-Key $apiKey',
+        'Content-Type': 'application/json',
+      }),
+      data: {
+        'text': [text],
+        'target_lang': target.toUpperCase(),
+        if (source != 'auto') 'source_lang': source.toUpperCase(),
+      },
+    );
+
+    final translations = response.data!['translations'] as List<dynamic>;
+    final first = translations.first as Map<String, dynamic>;
+
+    return TranslationResult(
+      originalText: text,
+      translatedText: first['text'] as String,
+      sourceLanguage:
+          (first['detected_source_language'] as String? ?? source).toLowerCase(),
+      targetLanguage: target,
+    );
+  }
+
+  /// LibreTranslate (self-hosted endpoint or libretranslate.com with API key)
+  Future<TranslationResult> _translateWithLibre(
+      String text, String source, String target) async {
+    final endpoint = _settings.apiEndpoint?.isNotEmpty == true
+        ? _settings.apiEndpoint!.replaceAll(RegExp(r'/+$'), '')
+        : 'https://libretranslate.com';
+
+    final response = await _dio.post<Map<String, dynamic>>(
+      '$endpoint/translate',
+      options: Options(headers: {'Content-Type': 'application/json'}),
+      data: {
+        'q': text,
+        'source': source,
+        'target': target,
+        'format': 'text',
+        if (_settings.apiKey?.isNotEmpty == true) 'api_key': _settings.apiKey,
+      },
+    );
+
+    final data = response.data!;
+    final detected = data['detectedLanguage'] as Map<String, dynamic>?;
+
+    return TranslationResult(
+      originalText: text,
+      translatedText: data['translatedText'] as String,
+      sourceLanguage: detected?['language'] as String? ?? source,
+      targetLanguage: target,
+      confidence: detected != null
+          ? ((detected['confidence'] as num?)?.toDouble() ?? 0) / 100
+          : null,
+    );
+  }
+
+  /// Detect language of text using charset heuristics
   Future<String?> detectLanguage(String text) async {
     if (text.isEmpty) return null;
 
     try {
-      // Here we would call the language detection API
-      debugPrint('Detecting language for: "$text"');
-
-      // Simulate API call
-      await Future.delayed(const Duration(milliseconds: 200));
-
-      // Simple heuristic detection (placeholder)
       if (_containsChinese(text)) return 'zh';
       if (_containsJapanese(text)) return 'ja';
       if (_containsKorean(text)) return 'ko';

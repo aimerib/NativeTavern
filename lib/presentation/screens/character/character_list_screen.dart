@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:native_tavern/data/models/character.dart';
+import 'package:native_tavern/domain/services/character_export_service.dart';
 import 'package:native_tavern/l10n/generated/app_localizations.dart';
 import 'package:native_tavern/presentation/providers/character_providers.dart';
 import 'package:native_tavern/presentation/providers/character_filter_providers.dart';
 import 'package:native_tavern/presentation/providers/chat_providers.dart';
 import 'package:native_tavern/presentation/widgets/character/character_filter_bar.dart';
+import 'package:native_tavern/presentation/widgets/common/confirm_delete_dialog.dart';
 import 'package:native_tavern/presentation/router/app_router.dart';
 import 'package:native_tavern/presentation/theme/app_theme.dart';
 import 'package:native_tavern/presentation/widgets/common/character_avatar_image.dart';
@@ -501,12 +503,21 @@ class _CharacterListTile extends ConsumerWidget {
               value: 'export',
               child: ListTile(
                 leading: const Icon(Icons.file_upload),
-                title: Text(l10n.exportChat),
+                title: Text(l10n.exportAsPng),
                 contentPadding: EdgeInsets.zero,
               ),
-              onTap: () {
-                // TODO: Export character
-              },
+              onTap: () =>
+                  _exportCharacter(context, ref, CharacterExportFormat.png),
+            ),
+            PopupMenuItem(
+              value: 'export_charx',
+              child: ListTile(
+                leading: const Icon(Icons.archive),
+                title: Text(l10n.exportAsCharx),
+                contentPadding: EdgeInsets.zero,
+              ),
+              onTap: () =>
+                  _exportCharacter(context, ref, CharacterExportFormat.charx),
             ),
             PopupMenuItem(
               value: 'delete',
@@ -545,33 +556,40 @@ class _CharacterListTile extends ConsumerWidget {
     }
   }
 
-  void _confirmDelete(BuildContext context, WidgetRef ref) {
+  Future<void> _exportCharacter(
+    BuildContext context,
+    WidgetRef ref,
+    CharacterExportFormat format,
+  ) async {
     final l10n = AppLocalizations.of(context);
-    
-    showDialog<void>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(l10n.deleteCharacter),
-        content: Text(l10n.deleteCharacterConfirmation(character.name)),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(l10n.cancel),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              ref.read(characterListProvider.notifier).deleteCharacter(character.id);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(l10n.characterDeleted)),
-              );
-            },
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: Text(l10n.delete),
-          ),
-        ],
-      ),
+    try {
+      await ref
+          .read(characterExportServiceProvider)
+          .exportAndShare(character, format);
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.exportFailed(e.toString()))),
+        );
+      }
+    }
+  }
+
+  Future<void> _confirmDelete(BuildContext context, WidgetRef ref) async {
+    final l10n = AppLocalizations.of(context);
+
+    final confirmed = await confirmDelete(
+      context,
+      ref,
+      title: l10n.deleteCharacter,
+      message: l10n.deleteCharacterConfirmation(character.name),
     );
+    if (confirmed && context.mounted) {
+      ref.read(characterListProvider.notifier).deleteCharacter(character.id);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.characterDeleted)),
+      );
+    }
   }
 
   Widget _buildListAvatar() {

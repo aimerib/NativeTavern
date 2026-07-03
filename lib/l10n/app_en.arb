@@ -389,7 +389,42 @@
   "@deleteThisAndAllAfter": {
     "description": "Delete this and all after menu item"
   },
-  
+
+  "confirmBeforeDelete": "Confirm before deleting",
+  "@confirmBeforeDelete": {
+    "description": "Settings toggle for showing a confirmation dialog before deletions"
+  },
+
+  "confirmBeforeDeleteDescription": "Ask for confirmation when deleting characters, chats, and messages",
+  "@confirmBeforeDeleteDescription": {
+    "description": "Subtitle for the confirm-before-delete settings toggle"
+  },
+
+  "editedLabel": "edited",
+  "@editedLabel": {
+    "description": "Small badge shown under a message that was manually edited"
+  },
+
+  "hideFromContext": "Hide from context",
+  "@hideFromContext": {
+    "description": "Menu item to exclude a message from the LLM prompt"
+  },
+
+  "showInContext": "Show in context",
+  "@showInContext": {
+    "description": "Menu item to re-include a hidden message in the LLM prompt"
+  },
+
+  "hideFromContextDescription": "Hidden messages stay visible but are not sent to the AI",
+  "@hideFromContextDescription": {
+    "description": "Subtitle for the hide/show from context menu item"
+  },
+
+  "hiddenFromContext": "hidden from context",
+  "@hiddenFromContext": {
+    "description": "Small badge shown under a message excluded from the LLM prompt"
+  },
+
   "attachImage": "Attach image",
   "@attachImage": {
     "description": "Attach image tooltip"
@@ -1611,16 +1646,6 @@
         "example": "Storage full"
       }
     }
-  },
-  
-  "pngExportComingSoon": "PNG export coming soon",
-  "@pngExportComingSoon": {
-    "description": "PNG export coming soon message"
-  },
-  
-  "charxExportComingSoon": "CharX export coming soon",
-  "@charxExportComingSoon": {
-    "description": "CharX export coming soon message"
   },
   
   "failedToCreateChat": "Failed to create chat",

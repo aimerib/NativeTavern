@@ -9,6 +9,7 @@ import 'package:native_tavern/presentation/providers/group_providers.dart';
 import 'package:native_tavern/presentation/providers/character_providers.dart';
 import 'package:native_tavern/presentation/theme/app_theme.dart';
 import 'package:native_tavern/presentation/widgets/common/character_avatar_image.dart';
+import 'package:native_tavern/presentation/widgets/common/confirm_delete_dialog.dart';
 import 'package:native_tavern/l10n/generated/app_localizations.dart';
 
 /// Groups list screen
@@ -295,31 +296,20 @@ class _GroupCard extends ConsumerWidget {
     context.go('/chat/${group.members.first.characterId}');
   }
 
-  void _confirmDelete(BuildContext context, WidgetRef ref) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(AppLocalizations.of(context)!.deleteGroup),
-        content: Text(AppLocalizations.of(context)!.deleteGroupConfirmation(group.name)),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(AppLocalizations.of(context)!.cancel),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              ref.read(groupListProvider.notifier).deleteGroup(group.id);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(AppLocalizations.of(context)!.groupDeleted(group.name))),
-              );
-            },
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: Text(AppLocalizations.of(context)!.delete),
-          ),
-        ],
-      ),
+  Future<void> _confirmDelete(BuildContext context, WidgetRef ref) async {
+    final l10n = AppLocalizations.of(context)!;
+    final confirmed = await confirmDelete(
+      context,
+      ref,
+      title: l10n.deleteGroup,
+      message: l10n.deleteGroupConfirmation(group.name),
     );
+    if (confirmed && context.mounted) {
+      ref.read(groupListProvider.notifier).deleteGroup(group.id);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.groupDeleted(group.name))),
+      );
+    }
   }
 }
 

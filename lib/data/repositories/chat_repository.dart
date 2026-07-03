@@ -134,6 +134,8 @@ class ChatRepository {
       characterId: Value(newMessage.characterId),
       characterName: Value(newMessage.characterName),
       attachmentsJson: Value(jsonEncode(newMessage.attachments.map((a) => a.toJson()).toList())),
+      isEdited: Value(newMessage.isEdited),
+      isHidden: Value(newMessage.isHidden),
     ));
     
     // Update chat's updatedAt
@@ -153,6 +155,8 @@ class ChatRepository {
           characterId: Value(message.characterId),
           characterName: Value(message.characterName),
           attachmentsJson: Value(jsonEncode(message.attachments.map((a) => a.toJson()).toList())),
+          isEdited: Value(message.isEdited),
+          isHidden: Value(message.isHidden),
         ));
     
     // Update chat's updatedAt
@@ -225,6 +229,8 @@ class ChatRepository {
       characterId: row.characterId,
       characterName: row.characterName,
       attachments: _parseAttachments(row.attachmentsJson),
+      isEdited: row.isEdited,
+      isHidden: row.isHidden,
     );
   }
 

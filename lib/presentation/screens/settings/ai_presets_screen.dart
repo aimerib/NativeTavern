@@ -9,6 +9,7 @@ import '../../../data/models/ai_preset.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../../providers/ai_preset_providers.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/common/confirm_delete_dialog.dart';
 
 /// Screen for managing AI presets
 class AIPresetsScreen extends ConsumerWidget {
@@ -352,25 +353,14 @@ class AIPresetsScreen extends ConsumerWidget {
 
   Future<void> _deletePreset(BuildContext context, WidgetRef ref, AIPreset preset) async {
     final l10n = AppLocalizations.of(context);
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(l10n.deletePreset),
-        content: Text(l10n.deletePresetConfirmation(preset.name)),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text(l10n.cancel),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: Text(l10n.delete),
-          ),
-        ],
-      ),
+    final confirm = await confirmDelete(
+      context,
+      ref,
+      title: l10n.deletePreset,
+      message: l10n.deletePresetConfirmation(preset.name),
     );
 
-    if (confirm != true) return;
+    if (!confirm) return;
 
     final activeId = ref.read(activeAIPresetIdProvider);
     if (activeId == preset.id) {

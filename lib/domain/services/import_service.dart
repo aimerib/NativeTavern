@@ -120,7 +120,10 @@ class ImportService {
     if (avatarData != null) {
       imageBytes = avatarData;
     } else if (character.assets?.avatarPath != null) {
-      final avatarFile = File(character.assets!.avatarPath!);
+      // Stored avatar paths are relative to the data dir on mobile
+      final absolutePath =
+          await PathUtils.toAbsolutePath(character.assets!.avatarPath!);
+      final avatarFile = File(absolutePath);
       if (await avatarFile.exists()) {
         imageBytes = await avatarFile.readAsBytes();
       } else {
@@ -154,7 +157,10 @@ class ImportService {
     if (avatarData != null) {
       archive.addFile(ArchiveFile('avatar.png', avatarData.length, avatarData));
     } else if (character.assets?.avatarPath != null) {
-      final avatarFile = File(character.assets!.avatarPath!);
+      // Stored avatar paths are relative to the data dir on mobile
+      final absolutePath =
+          await PathUtils.toAbsolutePath(character.assets!.avatarPath!);
+      final avatarFile = File(absolutePath);
       if (await avatarFile.exists()) {
         final bytes = await avatarFile.readAsBytes();
         archive.addFile(ArchiveFile('avatar.png', bytes.length, bytes));

@@ -5,11 +5,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:native_tavern/data/models/character.dart';
 import 'package:native_tavern/data/repositories/character_repository.dart';
+import 'package:native_tavern/domain/services/character_export_service.dart';
 import 'package:native_tavern/l10n/generated/app_localizations.dart';
 import 'package:native_tavern/presentation/providers/character_providers.dart';
 import 'package:native_tavern/presentation/providers/chat_providers.dart';
 import 'package:native_tavern/presentation/theme/app_theme.dart';
 import 'package:native_tavern/presentation/widgets/common/character_avatar_image.dart';
+import 'package:native_tavern/presentation/widgets/common/confirm_delete_dialog.dart';
 
 /// Provider for loading a single character by ID
 final characterDetailProvider = FutureProvider.family<Character?, String>((ref, id) async {
@@ -107,7 +109,6 @@ class _CharacterDetailContentState extends ConsumerState<_CharacterDetailContent
   }
 
   Future<void> _handleMenuAction(String action, Character character) async {
-    final l10n = AppLocalizations.of(context);
     switch (action) {
       case 'delete':
         await _confirmDelete(character);
@@ -116,42 +117,42 @@ class _CharacterDetailContentState extends ConsumerState<_CharacterDetailContent
         await _duplicateCharacter(character);
         break;
       case 'export':
-        // TODO: Implement PNG export
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.pngExportComingSoon)),
-        );
+        await _exportCharacter(character, CharacterExportFormat.png);
         break;
       case 'export_charx':
-        // TODO: Implement CharX export
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.charxExportComingSoon)),
-        );
+        await _exportCharacter(character, CharacterExportFormat.charx);
         break;
+    }
+  }
+
+  Future<void> _exportCharacter(
+    Character character,
+    CharacterExportFormat format,
+  ) async {
+    final l10n = AppLocalizations.of(context);
+    try {
+      await ref
+          .read(characterExportServiceProvider)
+          .exportAndShare(character, format);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.exportFailed(e.toString()))),
+        );
+      }
     }
   }
 
   Future<void> _confirmDelete(Character character) async {
     final l10n = AppLocalizations.of(context);
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(l10n.deleteCharacter),
-        content: Text(l10n.deleteCharacterConfirmationSimple(character.name)),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text(l10n.cancel),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: Text(l10n.delete),
-          ),
-        ],
-      ),
+    final confirmed = await confirmDelete(
+      context,
+      ref,
+      title: l10n.deleteCharacter,
+      message: l10n.deleteCharacterConfirmationSimple(character.name),
     );
 
-    if (confirmed == true && mounted) {
+    if (confirmed && mounted) {
       try {
         // Use characterListProvider.notifier to ensure list gets refreshed
         await ref.read(characterListProvider.notifier).deleteCharacter(character.id);

@@ -12,6 +12,7 @@ import 'package:native_tavern/presentation/providers/world_info_providers.dart';
 import 'package:native_tavern/presentation/screens/world_info/world_info_entry_editor_screen.dart';
 import 'package:native_tavern/presentation/theme/app_theme.dart';
 import 'package:native_tavern/l10n/generated/app_localizations.dart';
+import 'package:native_tavern/presentation/widgets/common/confirm_delete_dialog.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -186,28 +187,17 @@ class WorldInfoScreen extends ConsumerWidget {
     );
   }
 
-  void _showDeleteConfirmation(BuildContext context, WidgetRef ref, WorldInfo worldInfo) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(AppLocalizations.of(context)!.deleteGroup),
-        content: Text(AppLocalizations.of(context)!.deleteLorebookConfirmation(worldInfo.name)),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(AppLocalizations.of(context)!.cancel),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              ref.read(worldInfoNotifierProvider.notifier).deleteWorldInfo(worldInfo.id);
-            },
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: Text(AppLocalizations.of(context)!.delete),
-          ),
-        ],
-      ),
+  Future<void> _showDeleteConfirmation(BuildContext context, WidgetRef ref, WorldInfo worldInfo) async {
+    final l10n = AppLocalizations.of(context)!;
+    final confirmed = await confirmDelete(
+      context,
+      ref,
+      title: l10n.deleteGroup,
+      message: l10n.deleteLorebookConfirmation(worldInfo.name),
     );
+    if (confirmed) {
+      ref.read(worldInfoNotifierProvider.notifier).deleteWorldInfo(worldInfo.id);
+    }
   }
 
   void _openWorldInfo(BuildContext context, WorldInfo worldInfo) {
@@ -958,28 +948,17 @@ class _WorldInfoEntriesScreenState extends ConsumerState<WorldInfoEntriesScreen>
     );
   }
 
-  void _showDeleteEntryConfirmation(BuildContext context, WidgetRef ref, WorldInfoEntry entry) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(AppLocalizations.of(context)!.deleteEntry),
-        content: Text(AppLocalizations.of(context)!.deleteEntryConfirmation(entry.keys.join(", "))),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(AppLocalizations.of(context)!.cancel),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              ref.read(worldInfoNotifierProvider.notifier).deleteEntry(entry.id);
-            },
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: Text(AppLocalizations.of(context)!.delete),
-          ),
-        ],
-      ),
+  Future<void> _showDeleteEntryConfirmation(BuildContext context, WidgetRef ref, WorldInfoEntry entry) async {
+    final l10n = AppLocalizations.of(context)!;
+    final confirmed = await confirmDelete(
+      context,
+      ref,
+      title: l10n.deleteEntry,
+      message: l10n.deleteEntryConfirmation(entry.keys.join(", ")),
     );
+    if (confirmed) {
+      ref.read(worldInfoNotifierProvider.notifier).deleteEntry(entry.id);
+    }
   }
 }
 

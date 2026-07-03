@@ -1,8 +1,16 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:native_tavern/data/models/character.dart';
 import 'package:native_tavern/data/repositories/character_repository.dart';
+import 'package:native_tavern/domain/services/character_export_service.dart';
+import 'package:native_tavern/presentation/screens/import/import_screen.dart'
+    show importServiceProvider;
 
 // Note: characterRepositoryProvider is defined in character_repository.dart
+
+/// Character card export service (PNG / CharX / JSON)
+final characterExportServiceProvider = Provider<CharacterExportService>((ref) {
+  return CharacterExportService(ref.watch(importServiceProvider));
+});
 
 /// Selected character state
 final selectedCharacterIdProvider = StateProvider<String?>((ref) => null);

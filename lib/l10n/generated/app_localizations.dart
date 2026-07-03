@@ -532,6 +532,48 @@ abstract class AppLocalizations {
   /// **'Delete this and all after'**
   String get deleteThisAndAllAfter;
 
+  /// Settings toggle for showing a confirmation dialog before deletions
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm before deleting'**
+  String get confirmBeforeDelete;
+
+  /// Subtitle for the confirm-before-delete settings toggle
+  ///
+  /// In en, this message translates to:
+  /// **'Ask for confirmation when deleting characters, chats, and messages'**
+  String get confirmBeforeDeleteDescription;
+
+  /// Small badge shown under a message that was manually edited
+  ///
+  /// In en, this message translates to:
+  /// **'edited'**
+  String get editedLabel;
+
+  /// Menu item to exclude a message from the LLM prompt
+  ///
+  /// In en, this message translates to:
+  /// **'Hide from context'**
+  String get hideFromContext;
+
+  /// Menu item to re-include a hidden message in the LLM prompt
+  ///
+  /// In en, this message translates to:
+  /// **'Show in context'**
+  String get showInContext;
+
+  /// Subtitle for the hide/show from context menu item
+  ///
+  /// In en, this message translates to:
+  /// **'Hidden messages stay visible but are not sent to the AI'**
+  String get hideFromContextDescription;
+
+  /// Small badge shown under a message excluded from the LLM prompt
+  ///
+  /// In en, this message translates to:
+  /// **'hidden from context'**
+  String get hiddenFromContext;
+
   /// Attach image tooltip
   ///
   /// In en, this message translates to:
@@ -1869,18 +1911,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Failed to duplicate: {error}'**
   String failedToDuplicate(String error);
-
-  /// PNG export coming soon message
-  ///
-  /// In en, this message translates to:
-  /// **'PNG export coming soon'**
-  String get pngExportComingSoon;
-
-  /// CharX export coming soon message
-  ///
-  /// In en, this message translates to:
-  /// **'CharX export coming soon'**
-  String get charxExportComingSoon;
 
   /// Failed to create chat message
   ///

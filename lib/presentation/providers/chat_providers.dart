@@ -618,7 +618,23 @@ class ActiveChatNotifier extends StateNotifier<ActiveChatState> {
     final updatedMessage = message.copyWith(
       content: newContent,
       swipes: updatedSwipes,
+      isEdited: true,
     );
+
+    await _chatRepository.updateMessage(updatedMessage);
+
+    final updatedMessages = List<ChatMessage>.from(state.messages);
+    updatedMessages[messageIndex] = updatedMessage;
+    state = state.copyWith(messages: updatedMessages);
+  }
+
+  /// Toggle whether a message is excluded from the LLM context
+  Future<void> toggleMessageHidden(String messageId) async {
+    final messageIndex = state.messages.indexWhere((m) => m.id == messageId);
+    if (messageIndex < 0) return;
+
+    final message = state.messages[messageIndex];
+    final updatedMessage = message.copyWith(isHidden: !message.isHidden);
 
     await _chatRepository.updateMessage(updatedMessage);
 
@@ -956,7 +972,8 @@ class ActiveChatNotifier extends StateNotifier<ActiveChatState> {
     final chat = state.chat;
 
     // Get chat messages - use summaries if available
-    var chatMessages = state.messages;
+    // Hidden messages stay visible in the UI but are excluded from context
+    var chatMessages = state.messages.where((m) => !m.isHidden).toList();
     if (excludeLastAssistant &&
         chatMessages.isNotEmpty &&
         chatMessages.last.role == MessageRole.assistant) {
@@ -1493,7 +1510,11 @@ class ActiveChatNotifier extends StateNotifier<ActiveChatState> {
     final chat = state.chat;
 
     // Get chat messages up to (but not including) the specified index
-    final chatMessages = state.messages.sublist(0, messageIndex);
+    // Hidden messages stay visible in the UI but are excluded from context
+    final chatMessages = state.messages
+        .sublist(0, messageIndex)
+        .where((m) => !m.isHidden)
+        .toList();
 
     // Find matching World Info entries
     List<WorldInfoEntry> worldInfoEntries = [];
@@ -2449,8 +2470,9 @@ class ActiveChatNotifier extends StateNotifier<ActiveChatState> {
     final systemPrompt = await _buildGroupSystemPrompt(respondingCharacter);
     messages.add({'role': 'system', 'content': systemPrompt});
 
-    // Add chat messages
+    // Add chat messages (hidden messages are excluded from context)
     for (final msg in state.messages) {
+      if (msg.isHidden) continue;
       if (msg.role == MessageRole.user) {
         messages.add({'role': 'user', 'content': msg.content});
       } else if (msg.role == MessageRole.assistant) {
